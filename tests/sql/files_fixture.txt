@@ -1,0 +1,3 @@
+server_id=s1
+region=local
+unicode=中文😀

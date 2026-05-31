@@ -1,0 +1,15 @@
+dist/
+backups/
+backups-local/
+restore/
+coverage.out
+*.test
+*.log
+*.tmp
+*.tmp.*
+config.local.yaml
+dbbackup233.local.yml
+*.exe
+.env
+.env.*
+!.env.example

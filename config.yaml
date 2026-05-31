@@ -1,0 +1,86 @@
+defaults:
+  compress: gzip
+  timestamp_format: "20060102-150405"
+  concurrency: 1
+  work_dir: "./backups"
+  manifest_path: "./backups/manifest.jsonl"
+
+report:
+  enabled: false
+  url: "http://127.0.0.1:8080/api/backup/events"
+  token: "${BACKUP_CENTER_TOKEN}"
+  timeout: "5s"
+  retry:
+    attempts: 3
+    backoff: "1s"
+  headers:
+    X-Project: "game-server"
+
+identity:
+  project: "game-server"
+  cluster: "local"
+  machine_id: "${COMPUTERNAME}"
+
+retention:
+  keep_last: 7
+  keep_days: 14
+
+sources:
+  - name: "mysql-game"
+    type: mysql
+    mysql:
+      host: "127.0.0.1"
+      port: 3306
+      user: "backup"
+      password: "${MYSQL_BACKUP_PASSWORD}"
+      database: "game"
+      version: "mysql80" # enum: mysql57, mysql80
+      dump_tool: "mysqldump"
+      restore_tool: "mysql"
+      mode: "mysqldump"
+      single_transaction: true
+      quick: true
+      routines: true
+      triggers: true
+      events: true
+      set_gtid_purged: "OFF"
+      no_create_db: false
+
+  - name: "postgres-analytics"
+    type: postgres
+    postgres:
+      host: "127.0.0.1"
+      port: 5432
+      user: "backup"
+      password: "${PG_BACKUP_PASSWORD}"
+      database: "analytics"
+      dump_tool: "pg_dump"
+      restore_tool: "pg_restore"
+      mode: "pg_dump"
+      format: "custom"
+      jobs: 1
+
+  - name: "server-files"
+    type: file
+    file:
+      paths: ["./data", "./logs"]
+      restore_dir: "./restore/files"
+
+targets:
+  - name: "local"
+    type: local
+    local:
+      path: "./backups"
+
+jobs:
+  - name: "mysql-game"
+    source: "mysql-game"
+    targets: ["local"]
+
+  - name: "postgres-analytics"
+    source: "postgres-analytics"
+    targets: ["local"]
+
+  - name: "server-files"
+    source: "server-files"
+    targets: ["local"]

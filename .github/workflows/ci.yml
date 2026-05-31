@@ -1,0 +1,144 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  verify:
+    name: Verify
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v6
+
+      - uses: actions/setup-go@v6
+        with:
+          go-version: '1.23'
+          cache: true
+
+      - uses: actions/setup-node@v6
+        with:
+          node-version: '24'
+
+      - name: Download dependencies
+        run: go mod download
+
+      - name: Format check
+        run: |
+          test -z "$(gofmt -l .)"
+
+      - name: Vet
+        run: go vet ./...
+
+      - name: Build
+        run: go build -v ./...
+
+      - name: Test
+        run: go test -v -count=1 ./...
+
+      - name: CLI smoke
+        run: |
+          go run . version
+          go run . backup -c config.yaml --dry-run
+          go run . install mysqldump --dry-run
+          go run . update --tag v0.1.0 --dry-run
+          go run . cron "0 2 * * *" -c config.yaml --dry-run
+
+  install-script-smoke:
+    name: Install Script Smoke (${{ matrix.os }})
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 10
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, macos-latest, windows-latest]
+    steps:
+      - uses: actions/checkout@v6
+
+      - uses: actions/setup-go@v6
+        with:
+          go-version: '1.23'
+          cache: true
+
+      - uses: actions/setup-node@v6
+        with:
+          node-version: '24'
+
+      - name: Build local binary (Unix)
+        if: runner.os != 'Windows'
+        run: go build -o dbbackup233-test .
+
+      - name: Build local binary (Windows)
+        if: runner.os == 'Windows'
+        run: go build -o dbbackup233-test.exe .
+
+      - name: Script syntax smoke (Unix)
+        if: runner.os != 'Windows'
+        shell: bash
+        run: |
+          test -f scripts/install.sh
+          test -f scripts/install.ps1
+          ./dbbackup233-test version
+
+      - name: Script syntax smoke (Windows)
+        if: runner.os == 'Windows'
+        shell: pwsh
+        run: |
+          Test-Path scripts/install.sh
+          Test-Path scripts/install.ps1
+          .\dbbackup233-test.exe version
+
+  build-matrix:
+    name: Build (${{ matrix.goos }}/${{ matrix.goarch }})
+    needs: verify
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - goos: linux
+            goarch: amd64
+            ext: ''
+          - goos: linux
+            goarch: arm64
+            ext: ''
+          - goos: darwin
+            goarch: amd64
+            ext: ''
+          - goos: darwin
+            goarch: arm64
+            ext: ''
+          - goos: windows
+            goarch: amd64
+            ext: '.exe'
+    steps:
+      - uses: actions/checkout@v6
+
+      - uses: actions/setup-go@v6
+        with:
+          go-version: '1.23'
+          cache: true
+
+      - uses: actions/setup-node@v6
+        with:
+          node-version: '24'
+
+      - name: Cross-compile
+        env:
+          GOOS: ${{ matrix.goos }}
+          GOARCH: ${{ matrix.goarch }}
+          CGO_ENABLED: '0'
+        run: |
+          mkdir -p dist
+          go build -ldflags="-s -w -X github.com/neko233-com/dbbackup233/cmd.version=${{ github.sha }}" -o "dist/dbbackup233-${{ matrix.goos }}-${{ matrix.goarch }}${{ matrix.ext }}" .
