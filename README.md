@@ -15,6 +15,7 @@ Current MVP scope:
 - Optional HTTP reporting for backup start/completion
 - Cross-platform install script, `dbbackup233 update`, `dbbackup233 cron`,
   `dbbackup233 verify`, and `dbbackup233 prune`
+- Release binaries for Linux/macOS/Windows on amd64 and arm64
 
 ## Specs
 
@@ -24,6 +25,7 @@ This project uses spec-driven development:
 - [Testing Spec](D:/Code/neko233-Projects/dbbackup233/docs/specs/testing-spec.md)
 - [Implementation Plan](D:/Code/neko233-Projects/dbbackup233/docs/specs/implementation-plan.md)
 - [Operator Runbook](D:/Code/neko233-Projects/dbbackup233/docs/operator-runbook.md)
+- [Benchmark Guide](D:/Code/neko233-Projects/dbbackup233/docs/benchmark.md)
 
 ## Quick Start
 
@@ -164,10 +166,21 @@ or:
 ./scripts/test-docker-mysql.sh
 ```
 
-PostgreSQL integration testing is intentionally left as a spec placeholder
-until a PostgreSQL test environment is available.
+PostgreSQL Docker E2E is included in `test.cmd`.
+
+Benchmark MySQL backup time:
+
+```powershell
+.\scripts\bench-docker-mysql.ps1 -Rows 50000 -PayloadBytes 256
+```
 
 ## Release
 
 GitHub Actions follow the `unicli` style: CI verifies format/vet/build/test and
 release builds Linux/macOS/Windows binaries on `v*` tags.
+
+Local platform matrix check:
+
+```powershell
+.\scripts\check-platform-matrix.ps1
+```

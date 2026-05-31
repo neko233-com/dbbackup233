@@ -22,6 +22,21 @@ Verify:
 dbbackup233 version
 ```
 
+Published release binaries support:
+
+- linux/amd64
+- linux/arm64
+- darwin/amd64
+- darwin/arm64
+- windows/amd64
+- windows/arm64
+
+Local platform matrix check:
+
+```powershell
+.\scripts\check-platform-matrix.ps1
+```
+
 ## 2. Install Dump Tools
 
 MySQL:

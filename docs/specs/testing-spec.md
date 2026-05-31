@@ -112,6 +112,19 @@ Must verify:
 - `cron "0 2 * * *" --dry-run`
 - `version`
 
+### Platform Matrix
+
+CI must verify native smoke tests on:
+
+- linux/amd64
+- linux/arm64
+- darwin/amd64
+- darwin/arm64
+- windows/amd64
+- windows/arm64
+
+Release must build all six artifacts.
+
 ### PostgreSQL
 
 Current status:
@@ -120,7 +133,7 @@ Current status:
 - SQL fixtures exist
 - integration test is pending
 
-PostgreSQL Docker E2E should be added when ready:
+PostgreSQL Docker E2E must verify:
 
 - start PostgreSQL on non-5432 host port
 - load `tests/sql/postgres_schema.sql`
@@ -149,4 +162,3 @@ Docker MySQL only:
 ```bash
 go test -tags docker_integration ./backup -run TestDockerMySQLBackupRestoreAndHistory -count=1 -v
 ```
-

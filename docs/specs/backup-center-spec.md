@@ -238,6 +238,7 @@ Release artifacts must include:
 - darwin/amd64
 - darwin/arm64
 - windows/amd64
+- windows/arm64
 
 ## Reliability Requirements
 
@@ -248,4 +249,3 @@ Release artifacts must include:
 - Secrets must be supplied through env vars or ignored local config files.
 - Upload/report failures must be observable in logs.
 - Restore must be explicit and version-aware.
-

@@ -153,7 +153,7 @@ Recommended immediate tasks:
 1. Add `verify` command.
 2. Add file restore extraction test.
 3. Add checksum field to manifest.
-4. Add PostgreSQL Docker E2E.
+4. DONE: Add PostgreSQL Docker E2E.
 5. Add real install-script CI smoke on Windows/Linux/macOS.
 6. Add upload retry config.
 7. Add `retention` config and prune command.

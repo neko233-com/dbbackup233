@@ -5,7 +5,12 @@ param(
 
 $ErrorActionPreference = "Stop"
 
-$arch = if ([Environment]::Is64BitOperatingSystem) { "amd64" } else { throw "Only amd64 Windows is supported by the published binary matrix." }
+$processorArch = $env:PROCESSOR_ARCHITECTURE
+$arch = switch -Regex ($processorArch) {
+    "ARM64" { "arm64"; break }
+    "AMD64" { "amd64"; break }
+    default { throw "Unsupported Windows architecture: $processorArch" }
+}
 $asset = "dbbackup233-windows-$arch.exe"
 $api = "https://api.github.com/repos/$Repo/releases/latest"
 
