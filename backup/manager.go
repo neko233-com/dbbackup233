@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"sort"
 	"strings"
 	"sync"
 	"time"
@@ -35,12 +36,16 @@ func (m *BackupManager) Backup(ctx context.Context) error {
 	targets := mapTargets(m.cfg.Targets)
 	runCtx := Context{DryRun: m.opt.DryRun, Logf: m.opt.Logf}
 	reporter := NewReporter(m.cfg.Report, m.cfg.Identity)
+	jobs, err := selectJobs(m.cfg.Jobs, m.opt.JobNames)
+	if err != nil {
+		return err
+	}
 
 	sem := make(chan struct{}, m.cfg.Defaults.Concurrency)
 	var wg sync.WaitGroup
-	errs := make(chan error, len(m.cfg.Jobs))
+	errs := make(chan error, len(jobs))
 
-	for _, job := range m.cfg.Jobs {
+	for _, job := range jobs {
 		job := job
 		wg.Add(1)
 		go func() {
@@ -152,7 +157,56 @@ func (m *BackupManager) Restore(ctx context.Context, jobName, version string) er
 	if m.opt.DryRun {
 		return nil
 	}
+	if err := verifyArtifactChecksum(art); err != nil {
+		return err
+	}
 	return provider.Restore(runCtx, source, art.FilePath)
+}
+
+func selectJobs(jobs []JobConfig, names []string) ([]JobConfig, error) {
+	if len(names) == 0 {
+		return jobs, nil
+	}
+	wanted := make(map[string]struct{}, len(names))
+	for _, name := range names {
+		name = strings.TrimSpace(name)
+		if name != "" {
+			wanted[name] = struct{}{}
+		}
+	}
+	if len(wanted) == 0 {
+		return jobs, nil
+	}
+	out := make([]JobConfig, 0, len(wanted))
+	for _, job := range jobs {
+		if _, ok := wanted[job.Name]; ok {
+			out = append(out, job)
+			delete(wanted, job.Name)
+		}
+	}
+	if len(wanted) > 0 {
+		missing := make([]string, 0, len(wanted))
+		for name := range wanted {
+			missing = append(missing, name)
+		}
+		sort.Strings(missing)
+		return nil, fmt.Errorf("unknown backup job(s): %s", strings.Join(missing, ", "))
+	}
+	return out, nil
+}
+
+func verifyArtifactChecksum(art BackupArtifact) error {
+	if art.SHA256 == "" {
+		return fmt.Errorf("backup artifact %s has no sha256 in manifest; refuse restore without integrity metadata", art.Version)
+	}
+	got, err := SHA256File(art.FilePath)
+	if err != nil {
+		return err
+	}
+	if !strings.EqualFold(got, art.SHA256) {
+		return fmt.Errorf("backup artifact checksum mismatch for %s: manifest=%s actual=%s", art.FilePath, art.SHA256, got)
+	}
+	return nil
 }
 
 func artifactObjectName(job JobConfig, source SourceConfig, ext, version string) string {

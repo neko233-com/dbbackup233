@@ -3,8 +3,9 @@ package backup
 import "time"
 
 type RunnerOptions struct {
-	DryRun bool
-	Logf   func(format string, args ...any)
+	DryRun   bool
+	JobNames []string
+	Logf     func(format string, args ...any)
 }
 
 type BackupArtifact struct {

@@ -54,9 +54,12 @@ jobs:
         run: |
           go run . version
           go run . backup -c config.yaml --dry-run
+          go run . backup -c config.yaml --job mysql-game --dry-run
           go run . install mysqldump --dry-run
           go run . update --tag v0.1.0 --dry-run
+          go run . update --tag v0.1.0 --check
           go run . cron "0 2 * * *" -c config.yaml --dry-run
+          go run . cron remove --dry-run
 
   install-script-smoke:
     name: Native Smoke (${{ matrix.name }})
@@ -125,18 +128,24 @@ jobs:
         shell: bash
         run: |
           ./dbbackup233-test backup -c config.yaml --dry-run
+          ./dbbackup233-test backup -c config.yaml --job mysql-game --dry-run
           ./dbbackup233-test prune -c config.yaml --dry-run
           ./dbbackup233-test update --tag v0.1.0 --dry-run
+          ./dbbackup233-test update --tag v0.1.0 --check
           ./dbbackup233-test cron "0 2 * * *" -c config.yaml --dry-run
+          ./dbbackup233-test cron remove --dry-run
 
       - name: CLI smoke (Windows)
         if: runner.os == 'Windows'
         shell: pwsh
         run: |
           .\dbbackup233-test.exe backup -c config.yaml --dry-run
+          .\dbbackup233-test.exe backup -c config.yaml --job mysql-game --dry-run
           .\dbbackup233-test.exe prune -c config.yaml --dry-run
           .\dbbackup233-test.exe update --tag v0.1.0 --dry-run
+          .\dbbackup233-test.exe update --tag v0.1.0 --check
           .\dbbackup233-test.exe cron "0 2 * * *" -c config.yaml --dry-run
+          .\dbbackup233-test.exe cron remove --dry-run
 
   build-matrix:
     name: Build (${{ matrix.goos }}/${{ matrix.goarch }})

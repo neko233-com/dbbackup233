@@ -18,15 +18,17 @@ import (
 
 func updateCmd() *cobra.Command {
 	var dryRun bool
+	var checkOnly bool
 	var repo string
 	var tag string
 	c := &cobra.Command{
 		Use:   "update",
 		Short: "Upgrade dbbackup233 from the latest GitHub Release",
 		RunE: func(cmd *cobra.Command, args []string) error {
-			return runUpdate(cmd.Context(), cmd, repo, tag, dryRun)
+			return runUpdate(cmd.Context(), cmd, repo, tag, dryRun, checkOnly)
 		},
 	}
+	c.Flags().BoolVar(&checkOnly, "check", false, "check the selected release without replacing the binary")
 	c.Flags().BoolVar(&dryRun, "dry-run", false, "print update plan without replacing the binary")
 	c.Flags().StringVar(&repo, "repo", "neko233-com/dbbackup233", "GitHub owner/repo")
 	c.Flags().StringVar(&tag, "tag", "", "release tag to install; when empty, latest release is queried")
@@ -41,7 +43,7 @@ type githubRelease struct {
 	} `json:"assets"`
 }
 
-func runUpdate(ctx context.Context, cmd *cobra.Command, repo, tag string, dryRun bool) error {
+func runUpdate(ctx context.Context, cmd *cobra.Command, repo, tag string, dryRun, checkOnly bool) error {
 	if tag != "" {
 		asset := releaseAssetName()
 		url := "https://github.com/" + repo + "/releases/download/" + tag + "/" + asset
@@ -49,8 +51,8 @@ func runUpdate(ctx context.Context, cmd *cobra.Command, repo, tag string, dryRun
 		if err != nil {
 			return err
 		}
-		fmt.Fprintf(cmd.OutOrStdout(), "tag: %s\nasset: %s\nurl: %s\nreplace: %s\n", tag, asset, url, current)
-		if dryRun {
+		fmt.Fprintf(cmd.OutOrStdout(), "tag: %s\nasset: %s\nurl: %s\nreplace: %s\nmode: hot-swap-next-run\n", tag, asset, url, current)
+		if dryRun || checkOnly {
 			return nil
 		}
 		tmp, err := downloadAsset(ctx, url)
@@ -87,8 +89,8 @@ func runUpdate(ctx context.Context, cmd *cobra.Command, repo, tag string, dryRun
 	if err != nil {
 		return err
 	}
-	fmt.Fprintf(cmd.OutOrStdout(), "latest: %s\nasset: %s\nreplace: %s\n", release.TagName, assetName, current)
-	if dryRun {
+	fmt.Fprintf(cmd.OutOrStdout(), "latest: %s\nasset: %s\nreplace: %s\nmode: hot-swap-next-run\n", release.TagName, assetName, current)
+	if dryRun || checkOnly {
 		return nil
 	}
 	tmp, err := downloadAsset(ctx, assetURL)

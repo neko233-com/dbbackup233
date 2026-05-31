@@ -84,6 +84,12 @@ dbbackup233 backup -c config.local.yaml --dry-run
 dbbackup233 backup -c config.local.yaml
 ```
 
+Run selected jobs only:
+
+```bash
+dbbackup233 backup -c config.local.yaml --job mysql-game --job server-files
+```
+
 ## 7. List History
 
 ```bash
@@ -105,6 +111,8 @@ dbbackup233 restore mysql-game --version 20260531-120000 -c config.local.yaml --
 ```
 
 Restore intentionally requires `--yes` unless `--dry-run` is used.
+Before writing data, restore verifies the artifact SHA-256 recorded in the
+manifest. If the local file changed or is incomplete, restore stops.
 
 ## 9. Schedule
 
@@ -122,6 +130,14 @@ dbbackup233 cron "0 2 * * *" -c config.local.yaml --install
 
 Windows uses `schtasks`. Linux/macOS use `crontab`.
 
+List or remove the schedule:
+
+```bash
+dbbackup233 cron list
+dbbackup233 cron remove --dry-run
+dbbackup233 cron remove
+```
+
 ## 10. Update
 
 Latest release:
@@ -130,11 +146,21 @@ Latest release:
 dbbackup233 update
 ```
 
+Check only:
+
+```bash
+dbbackup233 update --check
+```
+
 Pinned release:
 
 ```bash
 dbbackup233 update --tag v0.1.0
 ```
+
+Update is hot-update-next-run: the running backup process is not interrupted.
+The installed binary is replaced so the next cron or manual run uses the new
+version.
 
 ## 11. Emergency Checklist
 

@@ -28,9 +28,11 @@ func TestDockerMySQLBackupRestoreAndHistory(t *testing.T) {
 	defer cancel()
 
 	port := dockerMySQLPort(t)
-	containerName := fmt.Sprintf("dbbackup233-mysql-it-%d", port)
-	assertPortAvailable(t, port)
-	startDockerMySQL(t, ctx, containerName, port)
+	containerName := fmt.Sprintf("dbbackup233-mysql-it-%d", time.Now().UnixNano())
+	if port > 0 {
+		assertPortAvailable(t, port)
+	}
+	port = startDockerMySQL(t, ctx, containerName, port)
 	defer removeDockerContainer(t, containerName)
 	waitForMySQL(t, ctx, port)
 
@@ -124,19 +126,43 @@ func TestDockerMySQLBackupRestoreAndHistory(t *testing.T) {
 	mock.AssertUploadedGzipContains(t, "CREATE TABLE `players`")
 }
 
-func startDockerMySQL(t *testing.T, ctx context.Context, containerName string, port int) {
+func startDockerMySQL(t *testing.T, ctx context.Context, containerName string, port int) int {
 	t.Helper()
 	removeDockerContainer(t, containerName)
+	publish := "127.0.0.1::3306"
+	if port > 0 {
+		publish = fmt.Sprintf("%d:3306", port)
+	}
 	args := []string{
 		"run", "-d", "--name", containerName,
 		"-e", "MYSQL_ROOT_PASSWORD=root",
-		"-p", fmt.Sprintf("%d:3306", port),
+		"-p", publish,
 		"mysql:8.0",
 	}
 	out, err := exec.CommandContext(ctx, "docker", args...).CombinedOutput()
 	if err != nil {
 		t.Fatalf("docker run failed: %v\n%s", err, out)
 	}
+	if port > 0 {
+		return port
+	}
+	out, err = exec.CommandContext(ctx, "docker", "port", containerName, "3306/tcp").CombinedOutput()
+	if err != nil {
+		t.Fatalf("docker port failed: %v\n%s", err, out)
+	}
+	text := strings.TrimSpace(string(out))
+	_, portText, ok := strings.Cut(text, ":")
+	if !ok {
+		t.Fatalf("unexpected docker port output: %q", text)
+	}
+	parsed, err := strconv.Atoi(portText)
+	if err != nil {
+		t.Fatalf("unexpected docker port output: %q", text)
+	}
+	if parsed == 3306 {
+		t.Fatalf("docker picked default MySQL port 3306; expected a non-default host port")
+	}
+	return parsed
 }
 
 func waitForMySQL(t *testing.T, ctx context.Context, port int) {
@@ -231,7 +257,7 @@ func dockerMySQLPort(t *testing.T) int {
 		}
 		return parsed
 	}
-	return freeNonDefaultPort(t)
+	return 0
 }
 
 func assertPortAvailable(t *testing.T, port int) {
@@ -241,20 +267,6 @@ func assertPortAvailable(t *testing.T, port int) {
 		t.Fatalf("port %d is not available; set DBBACKUP233_DOCKER_MYSQL_PORT to another non-3306 port: %v", port, err)
 	}
 	_ = l.Close()
-}
-
-func freeNonDefaultPort(t *testing.T) int {
-	t.Helper()
-	l, err := net.Listen("tcp", "127.0.0.1:0")
-	if err != nil {
-		t.Fatal(err)
-	}
-	defer l.Close()
-	port := l.Addr().(*net.TCPAddr).Port
-	if port == 3306 {
-		return freeNonDefaultPort(t)
-	}
-	return port
 }
 
 func writeFixtureDir(t *testing.T, root string) string {

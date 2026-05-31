@@ -33,6 +33,7 @@ Must test:
 - find latest by job
 - find exact version by job
 - missing version fails clearly
+- restore rejects checksum mismatch before provider execution
 
 ### MySQL Docker E2E
 
@@ -75,8 +76,7 @@ Must test:
 - archive creation
 - local target storage
 - platform-specific archive command works
-
-Future restore validation should extract archive and compare file content.
+- restore extracts archive and compares file content
 
 ### HTTP Reporting
 
@@ -107,10 +107,23 @@ Current tested SDK:
 Must verify:
 
 - `backup --dry-run`
+- `backup --job NAME --dry-run`
+- unknown `backup --job NAME` fails clearly
 - `install all --dry-run`
 - `update --tag vX.Y.Z --dry-run`
+- `update --tag vX.Y.Z --check`
 - `cron "0 2 * * *" --dry-run`
+- `cron remove --dry-run`
 - `version`
+
+### Cron
+
+Must test:
+
+- Windows `schtasks /Create` command generation
+- Windows hourly schedule generation
+- platform-specific list command generation
+- platform-specific remove command generation
 
 ### Platform Matrix
 

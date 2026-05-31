@@ -42,6 +42,8 @@ Supported operations:
 - `install`
 - `update`
 - `cron`
+- `verify`
+- `prune`
 - `version`
 
 ## Explicit Non-Goals For MVP
@@ -90,6 +92,7 @@ Rules:
 - `targets` define outputs.
 - `jobs` bind one source to one or more targets.
 - A single `backup` command may execute multiple jobs.
+- `backup --job NAME` may select one or more jobs from the config.
 - `defaults.concurrency` controls job-level parallelism.
 - Default concurrency is `1` to avoid surprise database pressure.
 
@@ -155,6 +158,8 @@ Rules:
 - If history is missing, fail with a clear error.
 - Restore must never guess from directory scanning unless an explicit future
   feature adds index rebuilding.
+- Restore must verify the artifact SHA-256 recorded in the manifest before any
+  provider writes data.
 
 ## History Contract
 
@@ -171,6 +176,7 @@ Each record must contain:
 - artifact size
 - created timestamp
 - target names
+- sha256
 
 The manifest is the local source of truth for versioned restore.
 
@@ -227,7 +233,7 @@ The CLI must support:
 Required platform commands:
 
 - install script
-- update command
+- update command with `--check` and hot-update-next-run semantics
 - cron/scheduled task command
 - test script
 
@@ -249,3 +255,4 @@ Release artifacts must include:
 - Secrets must be supplied through env vars or ignored local config files.
 - Upload/report failures must be observable in logs.
 - Restore must be explicit and version-aware.
+- Restore must fail closed when integrity metadata is missing or mismatched.

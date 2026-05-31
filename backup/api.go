@@ -20,6 +20,11 @@ func RunConfig(ctx context.Context, cfg Config, opt RunnerOptions) error {
 	return NewRunner(cfg, opt).Run(ctx)
 }
 
+func RunSelected(ctx context.Context, configPath string, jobNames []string, opt RunnerOptions) error {
+	opt.JobNames = append([]string(nil), jobNames...)
+	return Run(ctx, configPath, opt)
+}
+
 func RunRestore(ctx context.Context, configPath, jobName, version string, opt RunnerOptions) error {
 	cfg, err := LoadConfig(configPath)
 	if err != nil {

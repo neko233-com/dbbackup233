@@ -12,8 +12,10 @@ Current MVP scope:
 - Local backup target first; S3/TOS/OSS provider remains in the library for
   later rollout
 - Manifest-based backup history and versioned restore
+- Restore-time SHA-256 integrity verification before any write
 - Optional HTTP reporting for backup start/completion
-- Cross-platform install script, `dbbackup233 update`, `dbbackup233 cron`,
+- Cross-platform install script, hot-update-next-run `dbbackup233 update`,
+  `dbbackup233 cron`,
   `dbbackup233 verify`, and `dbbackup233 prune`
 - Release binaries for Linux/macOS/Windows on amd64 and arm64
 
@@ -31,6 +33,7 @@ This project uses spec-driven development:
 
 ```bash
 dbbackup233 backup -c config.yaml
+dbbackup233 backup -c config.yaml --job mysql-game --job server-files
 dbbackup233 list -c config.yaml
 dbbackup233 restore mysql-game --version 20260531-120000 -c config.yaml
 dbbackup233 prune -c config.yaml --dry-run
@@ -61,7 +64,12 @@ Upgrade:
 
 ```bash
 dbbackup233 update
+dbbackup233 update --check
 ```
+
+`update` replaces the installed binary for the next process run. A backup that
+is already running keeps using its current process; the next manual run or cron
+run uses the new binary.
 
 ## Scheduling
 
@@ -78,6 +86,14 @@ dbbackup233 cron "0 2 * * *" -c config.yaml --install
 ```
 
 Windows uses `schtasks`. Linux and macOS use `crontab`.
+
+Inspect or remove a schedule:
+
+```bash
+dbbackup233 cron list
+dbbackup233 cron remove --dry-run
+dbbackup233 cron remove
+```
 
 ## Config
 
@@ -113,6 +129,7 @@ dbbackup233 restore mysql-game --version 20260531-120000 -c config.yaml
 ```
 
 Without `--version`, restore uses the latest artifact for that job.
+Before restore writes data, the local artifact SHA-256 must match the manifest.
 
 ## HTTP Reporting
 
