@@ -1,12 +1,17 @@
 # dbbackup233
 
+Docs: https://neko233-com.github.io/dbbackup233/
+
 `dbbackup233` is the Backup Center CLI for game projects: one binary plus one
 YAML config gives any Windows/Linux/macOS machine a repeatable backup and
 restore workflow.
 
 Current MVP scope:
 
-- MySQL backup/restore through official `mysqldump` and `mysql`
+- MySQL physical backup through Percona XtraBackup, with full and incremental
+  modes for large game databases
+- MySQL logical backup/restore through official `mysqldump` and `mysql` for
+  small databases and compatibility
 - PostgreSQL provider through `pg_dump` and `pg_restore`, with Docker E2E
 - File backup/restore through platform-native archive tools
 - Local backup target first; S3/TOS/OSS provider remains in the library for
@@ -43,6 +48,7 @@ Install required database dump tools:
 
 ```bash
 dbbackup233 install mysqldump
+dbbackup233 install xtrabackup
 dbbackup233 install pg_dump
 ```
 
@@ -105,6 +111,45 @@ MySQL version is an enum:
 
 - `mysql57`
 - `mysql80`
+
+For large game databases, use XtraBackup instead of `mysqldump`:
+
+```yaml
+sources:
+  - name: "mysql-game-full"
+    type: mysql
+    mysql:
+      host: "127.0.0.1"
+      port: 3306
+      user: "backup"
+      password: "${MYSQL_BACKUP_PASSWORD}"
+      database: "game"
+      version: "mysql80"
+      mode: "xtrabackup-full"
+      xtrabackup_tool: "xtrabackup"
+      xtrabackup_dir: "./backups/xtrabackup"
+      xtrabackup_restore_dir: "./restore/mysql-xtrabackup"
+
+  - name: "mysql-game-incremental"
+    type: mysql
+    mysql:
+      host: "127.0.0.1"
+      port: 3306
+      user: "backup"
+      password: "${MYSQL_BACKUP_PASSWORD}"
+      database: "game"
+      version: "mysql80"
+      mode: "xtrabackup-incremental"
+      xtrabackup_tool: "xtrabackup"
+      xtrabackup_dir: "./backups/xtrabackup"
+      incremental_base_dir: "" # optional; empty uses xtrabackup_dir/latest-base.txt
+```
+
+XtraBackup artifacts use `.xb.tar.gz`. Restore extracts and prepares the
+backup into `xtrabackup_restore_dir`; operator then stops MySQL and runs
+`xtrabackup --copy-back --target-dir=<restore-dir>` manually.
+Each successful XtraBackup updates `xtrabackup_dir/latest-base.txt`, so the next
+incremental job can chain from the newest local physical backup.
 
 One config can submit many backup jobs in one command:
 

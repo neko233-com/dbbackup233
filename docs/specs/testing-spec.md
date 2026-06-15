@@ -51,6 +51,18 @@ Must test through Docker:
 - representative aggregate values match
 - manifest has expected history records
 
+### MySQL XtraBackup Docker E2E
+
+Must test through Docker:
+
+- large synthetic InnoDB table loads successfully
+- XtraBackup full backup creates `.xb.tar.gz` artifact
+- XtraBackup incremental backup uses prior local base
+- `xtrabackup_checkpoints` exists in latest base directory
+- manifest records both full and incremental artifacts with SHA-256
+- concurrent writes continue during XtraBackup
+- Docker sidecar can run `percona/percona-xtrabackup:8.0`
+
 MySQL fixture must include:
 
 - integer
@@ -174,4 +186,10 @@ Docker MySQL only:
 
 ```bash
 go test -tags docker_integration ./backup -run TestDockerMySQLBackupRestoreAndHistory -count=1 -v
+```
+
+Docker MySQL XtraBackup:
+
+```bash
+go test -tags "docker_integration docker_benchmark docker_xtrabackup" ./backup -run TestDockerMySQLXtraBackupFullIncrementalAndWrites -count=1 -v
 ```

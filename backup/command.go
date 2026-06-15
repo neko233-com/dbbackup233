@@ -92,7 +92,16 @@ func (r readCloser) Close() error {
 
 func maskDumpArgs(args []string) []string {
 	out := make([]string, len(args))
-	copy(out, args)
+	for i, arg := range args {
+		switch {
+		case strings.HasPrefix(arg, "--password="):
+			out[i] = "--password=***"
+		case strings.HasPrefix(arg, "MYSQL_PWD="):
+			out[i] = "MYSQL_PWD=***"
+		default:
+			out[i] = arg
+		}
+	}
 	return out
 }
 

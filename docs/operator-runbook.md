@@ -43,7 +43,12 @@ MySQL:
 
 ```bash
 dbbackup233 install mysqldump
+dbbackup233 install xtrabackup
 ```
+
+Use `mysqldump` only for small DBs or portability. For large game production
+DBs, use `mode: xtrabackup-full` plus `mode: xtrabackup-incremental`; this
+avoids full logical export every run and avoids table-level dump pressure.
 
 PostgreSQL:
 
@@ -90,6 +95,18 @@ Run selected jobs only:
 dbbackup233 backup -c config.local.yaml --job mysql-game --job server-files
 ```
 
+Recommended MySQL cadence for large game DB:
+
+```bash
+dbbackup233 backup -c config.local.yaml --job mysql-game-full
+dbbackup233 backup -c config.local.yaml --job mysql-game-incremental
+```
+
+Leave `incremental_base_dir` empty to use `xtrabackup_dir/latest-base.txt`.
+dbbackup233 updates that file after each successful XtraBackup. Or set
+`incremental_base_dir` explicitly to a full/incremental directory containing
+`xtrabackup_checkpoints`.
+
 ## 7. List History
 
 ```bash
@@ -113,6 +130,16 @@ dbbackup233 restore mysql-game --version 20260531-120000 -c config.local.yaml --
 Restore intentionally requires `--yes` unless `--dry-run` is used.
 Before writing data, restore verifies the artifact SHA-256 recorded in the
 manifest. If the local file changed or is incomplete, restore stops.
+
+For XtraBackup artifacts, restore extracts and runs `xtrabackup --prepare` into
+`xtrabackup_restore_dir`. Physical copy-back is manual by design:
+
+```bash
+systemctl stop mysql
+xtrabackup --copy-back --target-dir=./restore/mysql-xtrabackup
+chown -R mysql:mysql /var/lib/mysql
+systemctl start mysql
+```
 
 ## 9. Schedule
 

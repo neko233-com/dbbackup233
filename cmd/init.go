@@ -54,6 +54,36 @@ sources:
       events: true
       set_gtid_purged: "OFF"
 
+  - name: "mysql-game-full"
+    type: mysql
+    mysql:
+      host: "127.0.0.1"
+      port: 3306
+      user: "backup"
+      password: "${MYSQL_BACKUP_PASSWORD}"
+      database: "game"
+      version: "mysql80"
+      mode: "xtrabackup-full"
+      xtrabackup_tool: "xtrabackup"
+      xtrabackup_dir: "./backups/xtrabackup"
+      xtrabackup_restore_dir: "./restore/mysql-xtrabackup"
+
+  - name: "mysql-game-incremental"
+    type: mysql
+    mysql:
+      host: "127.0.0.1"
+      port: 3306
+      user: "backup"
+      password: "${MYSQL_BACKUP_PASSWORD}"
+      database: "game"
+      version: "mysql80"
+      mode: "xtrabackup-incremental"
+      xtrabackup_tool: "xtrabackup"
+      xtrabackup_dir: "./backups/xtrabackup"
+      # Optional. If empty, dbbackup233 uses xtrabackup_dir/latest-base.txt.
+      incremental_base_dir: ""
+      xtrabackup_restore_dir: "./restore/mysql-xtrabackup"
+
   - name: "postgres-analytics"
     type: postgres
     postgres:
@@ -121,6 +151,12 @@ targets:
 jobs:
   - name: "mysql-game"
     source: "mysql-game"
+    targets: ["local", "oss"]
+  - name: "mysql-game-full"
+    source: "mysql-game-full"
+    targets: ["local", "oss"]
+  - name: "mysql-game-incremental"
+    source: "mysql-game-incremental"
     targets: ["local", "oss"]
   - name: "postgres-analytics"
     source: "postgres-analytics"

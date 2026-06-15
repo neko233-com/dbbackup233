@@ -58,7 +58,7 @@ func expandInstallTools(value string) ([]string, error) {
 	case "redis", "redis-cli":
 		return []string{"redis-cli"}, nil
 	case "all":
-		return []string{"mysqldump", "pg_dump", "mongodump", "redis-cli"}, nil
+		return []string{"mysqldump", "xtrabackup", "pg_dump", "mongodump", "redis-cli"}, nil
 	default:
 		return nil, fmt.Errorf("unsupported tool %q", value)
 	}

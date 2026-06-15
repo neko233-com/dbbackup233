@@ -64,25 +64,32 @@ type SourceConfig struct {
 }
 
 type MySQLConfig struct {
-	Host              string   `yaml:"host"`
-	Port              int      `yaml:"port"`
-	User              string   `yaml:"user"`
-	Password          string   `yaml:"password"`
-	Database          string   `yaml:"database"`
-	RestoreDatabase   string   `yaml:"restore_database"`
-	Version           string   `yaml:"version"`
-	DumpTool          string   `yaml:"dump_tool"`
-	RestoreTool       string   `yaml:"restore_tool"`
-	Mode              string   `yaml:"mode"`
-	SingleTransaction bool     `yaml:"single_transaction"`
-	Quick             bool     `yaml:"quick"`
-	Routines          bool     `yaml:"routines"`
-	Triggers          bool     `yaml:"triggers"`
-	Events            bool     `yaml:"events"`
-	SetGTIDPurged     string   `yaml:"set_gtid_purged"`
-	NoCreateDB        bool     `yaml:"no_create_db"`
-	ExtraArgs         []string `yaml:"extra_args"`
-	RestoreExtraArgs  []string `yaml:"restore_extra_args"`
+	Host               string   `yaml:"host"`
+	Port               int      `yaml:"port"`
+	User               string   `yaml:"user"`
+	Password           string   `yaml:"password"`
+	Database           string   `yaml:"database"`
+	RestoreDatabase    string   `yaml:"restore_database"`
+	Version            string   `yaml:"version"`
+	DumpTool           string   `yaml:"dump_tool"`
+	RestoreTool        string   `yaml:"restore_tool"`
+	Mode               string   `yaml:"mode"`
+	XtraBackupTool     string   `yaml:"xtrabackup_tool"`
+	XtraBackupDir      string   `yaml:"xtrabackup_dir"`
+	XtraCommandDir     string   `yaml:"xtrabackup_command_dir"`
+	XtraRestoreDir     string   `yaml:"xtrabackup_restore_dir"`
+	IncrementalBaseDir string   `yaml:"incremental_base_dir"`
+	SingleTransaction  bool     `yaml:"single_transaction"`
+	Quick              bool     `yaml:"quick"`
+	Routines           bool     `yaml:"routines"`
+	Triggers           bool     `yaml:"triggers"`
+	Events             bool     `yaml:"events"`
+	SetGTIDPurged      string   `yaml:"set_gtid_purged"`
+	NoCreateDB         bool     `yaml:"no_create_db"`
+	ExtraArgs          []string `yaml:"extra_args"`
+	RestoreExtraArgs   []string `yaml:"restore_extra_args"`
+	XtraExtraArgs      []string `yaml:"xtrabackup_extra_args"`
+	PrepareExtraArgs   []string `yaml:"prepare_extra_args"`
 }
 
 type PostgresConfig struct {
@@ -228,6 +235,10 @@ func (c *Config) ApplyDefaults() {
 			if src.MySQL.Mode == "" {
 				src.MySQL.Mode = "mysqldump"
 			}
+			src.MySQL.Mode = strings.ToLower(src.MySQL.Mode)
+			if src.MySQL.XtraBackupTool == "" {
+				src.MySQL.XtraBackupTool = DefaultDumpToolName("xtrabackup")
+			}
 			if !src.MySQL.SingleTransaction {
 				src.MySQL.SingleTransaction = true
 			}
@@ -369,6 +380,12 @@ func validateSource(src SourceConfig) error {
 		if src.MySQL.Version != "" && !isValidMySQLVersion(src.MySQL.Version) {
 			return fmt.Errorf("mysql source %q version must be one of mysql57, mysql80", src.Name)
 		}
+		if !isValidMySQLMode(src.MySQL.Mode) {
+			return fmt.Errorf("mysql source %q mode must be one of mysqldump, xtrabackup-full, xtrabackup-incremental", src.Name)
+		}
+		if isXtraBackupMode(src.MySQL.Mode) && src.MySQL.XtraBackupDir == "" {
+			return fmt.Errorf("mysql source %q xtrabackup mode requires xtrabackup_dir", src.Name)
+		}
 	case "postgres":
 		if src.Postgres.Host == "" || src.Postgres.User == "" || src.Postgres.Database == "" {
 			return fmt.Errorf("postgres source %q requires host, user, and database", src.Name)
@@ -393,6 +410,24 @@ func validateSource(src SourceConfig) error {
 		return fmt.Errorf("source %q has unsupported type %q", src.Name, src.Type)
 	}
 	return nil
+}
+
+func isValidMySQLMode(mode string) bool {
+	switch strings.ToLower(mode) {
+	case "mysqldump", "xtrabackup-full", "xtrabackup-incremental":
+		return true
+	default:
+		return false
+	}
+}
+
+func isXtraBackupMode(mode string) bool {
+	switch strings.ToLower(mode) {
+	case "xtrabackup-full", "xtrabackup-incremental":
+		return true
+	default:
+		return false
+	}
 }
 
 func isValidMySQLVersion(version string) bool {

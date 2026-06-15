@@ -1,8 +1,10 @@
 # Backup Benchmark
 
-Benchmarks are Docker-driven and use official `mysqldump` inside the MySQL
-container. The benchmark intentionally separates total test time from measured
-backup time:
+Benchmarks are Docker-driven. The legacy benchmark uses official `mysqldump`
+inside the MySQL container. The XtraBackup validation uses
+`percona/percona-xtrabackup:8.0` as a sidecar against the MySQL datadir volume.
+
+The benchmark intentionally separates total test time from measured backup time:
 
 - total test time includes Docker startup and data generation
 - reported `elapsed` measures only `dbbackup233 backup`
@@ -21,6 +23,16 @@ Linux/macOS:
 DBBACKUP233_BENCH_ROWS=50000 DBBACKUP233_BENCH_PAYLOAD_BYTES=256 ./scripts/bench-docker-mysql.sh
 ```
 
+XtraBackup full + incremental validation:
+
+```powershell
+.\scripts\test-docker-mysql-xtrabackup.ps1 -Rows 100000 -PayloadBytes 512
+```
+
+```bash
+DBBACKUP233_XTRA_ROWS=100000 DBBACKUP233_XTRA_PAYLOAD_BYTES=512 ./scripts/test-docker-mysql-xtrabackup.sh
+```
+
 ## Current Local Results
 
 Environment:
@@ -36,6 +48,12 @@ Environment:
 | ---: | ---: | ---: | ---: | ---: | ---: | ---: |
 | 50,000 | 256 | 0.59 MiB | 419 ms | 119,468 | 1.41 | 40 s |
 | 200,000 | 512 | 2.92 MiB | 2.157 s | 92,716 | 1.35 | 118 s |
+
+XtraBackup validation:
+
+| Rows | Payload bytes | Concurrent writes during incremental | Result |
+| ---: | ---: | ---: | --- |
+| 100,000 | 512 | 916 | full + incremental passed |
 
 The low compressed artifact size is expected because the synthetic payload is
 highly compressible. For production-like estimates, run with a larger payload or

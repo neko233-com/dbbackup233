@@ -46,8 +46,15 @@ func VerifyConfig(cfg Config) VerifyResult {
 	for _, source := range cfg.Sources {
 		switch source.Type {
 		case "mysql":
-			checkTool(&result, source.Name, source.MySQL.DumpTool)
-			checkTool(&result, source.Name, source.MySQL.RestoreTool)
+			if isXtraBackupMode(source.MySQL.Mode) {
+				checkTool(&result, source.Name, source.MySQL.XtraBackupTool)
+				if err := ValidateXtraBackupChain(source.MySQL); err != nil {
+					result.Warnings = append(result.Warnings, fmt.Sprintf("source %s xtrabackup chain check failed: %v", source.Name, err))
+				}
+			} else {
+				checkTool(&result, source.Name, source.MySQL.DumpTool)
+				checkTool(&result, source.Name, source.MySQL.RestoreTool)
+			}
 		case "postgres":
 			checkTool(&result, source.Name, source.Postgres.DumpTool)
 			checkTool(&result, source.Name, source.Postgres.RestoreTool)

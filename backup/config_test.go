@@ -64,3 +64,18 @@ func TestMySQLVersionNormalize(t *testing.T) {
 		t.Fatal(err)
 	}
 }
+
+func TestMySQLXtraBackupModeValidation(t *testing.T) {
+	cfg := Config{
+		Defaults: Defaults{Compress: "gzip", Concurrency: 1},
+		Sources: []SourceConfig{{
+			Name: "game", Type: "mysql", MySQL: MySQLConfig{Host: "127.0.0.1", User: "backup", Database: "game", Mode: "xtrabackup-full"},
+		}},
+		Targets: []TargetConfig{{Name: "local", Type: "local", Local: LocalTarget{Path: "./backups"}}},
+		Jobs:    []JobConfig{{Name: "game", Source: "game", Targets: []string{"local"}}},
+	}
+	cfg.ApplyDefaults()
+	if err := cfg.Validate(); err == nil {
+		t.Fatal("expected missing xtrabackup_dir error")
+	}
+}

@@ -25,7 +25,10 @@ simplicity.
 
 Supported backup sources:
 
-- MySQL via official `mysqldump` and restore via official `mysql`
+- MySQL physical backup via Percona XtraBackup, including full and incremental
+  modes
+- MySQL logical backup via official `mysqldump` and restore via official
+  `mysql` for small databases and compatibility
 - PostgreSQL via official `pg_dump` and restore via official `pg_restore`
 - Files via platform archive tools
 
@@ -49,13 +52,12 @@ Supported operations:
 ## Explicit Non-Goals For MVP
 
 - Native cloud snapshot APIs
-- Hot physical MySQL backup through XtraBackup as default behavior
 - PostgreSQL integration test without a PostgreSQL environment
 - MongoDB/Redis production support
 - Central Backup Center server implementation
 
-MongoDB, Redis, config repository backup, XtraBackup, and `pg_basebackup` remain
-extension points, but they should not block the MySQL/files production path.
+MongoDB, Redis, config repository backup, and `pg_basebackup` remain extension
+points, but they should not block the MySQL/files production path.
 
 ## Configuration Model
 
@@ -114,9 +116,14 @@ Unknown versions must fail validation.
 
 ### MySQL
 
-Default mode:
+Recommended production mode:
 
-- `mysqldump`
+- `xtrabackup-full` for large production game databases
+- `xtrabackup-incremental` for chained incremental physical backups
+- `mysqldump` remains supported for small databases and portability
+
+Logical dump mode uses:
+
 - `--single-transaction`
 - `--quick`
 - `--default-character-set=utf8mb4`
@@ -124,6 +131,8 @@ Default mode:
 The provider must support:
 
 - logical dump
+- physical full backup
+- physical incremental backup
 - restore to the original database
 - restore to a different database with `restore_database`
 - `no_create_db` for cross-database restore validation
