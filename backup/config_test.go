@@ -103,3 +103,28 @@ func TestMySQLPhysicalModeDefaults(t *testing.T) {
 		t.Fatal(err)
 	}
 }
+
+func TestAdditionalProviderDefaults(t *testing.T) {
+	cfg := Config{
+		Defaults: Defaults{Compress: "gzip", Concurrency: 1},
+		Sources: []SourceConfig{
+			{Name: "es", Type: "elastic", Elastic: ElasticConfig{URL: "http://127.0.0.1:9200", Repository: "repo"}},
+			{Name: "ch", Type: "clickhouse", ClickHouse: ClickHouseConfig{Host: "127.0.0.1", Database: "game", BackupDestination: "Disk('backups', 'game.zip')"}},
+		},
+		Targets: []TargetConfig{{Name: "local", Type: "local", Local: LocalTarget{Path: "./backups"}}},
+		Jobs: []JobConfig{
+			{Name: "es", Source: "es", Targets: []string{"local"}},
+			{Name: "ch", Source: "ch", Targets: []string{"local"}},
+		},
+	}
+	cfg.ApplyDefaults()
+	if cfg.Sources[0].Type != "elasticsearch" || cfg.Sources[0].Elastic.Mode != "snapshot" {
+		t.Fatalf("bad elastic defaults: %+v", cfg.Sources[0])
+	}
+	if cfg.Sources[1].ClickHouse.Port != 9000 || cfg.Sources[1].ClickHouse.Mode != "full" {
+		t.Fatalf("bad clickhouse defaults: %+v", cfg.Sources[1])
+	}
+	if err := cfg.Validate(); err != nil {
+		t.Fatal(err)
+	}
+}

@@ -12,6 +12,10 @@ func providerFor(sourceType string) (Provider, error) {
 		return MongoBackupProvider{}, nil
 	case "redis":
 		return RedisBackupProvider{}, nil
+	case "elasticsearch":
+		return ElasticBackupProvider{}, nil
+	case "clickhouse":
+		return ClickHouseBackupProvider{}, nil
 	case "file":
 		return FileBackupProvider{}, nil
 	case "config":

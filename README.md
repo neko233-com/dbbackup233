@@ -13,6 +13,10 @@ Current MVP scope:
 - MySQL logical backup/restore through official `mysqldump` and `mysql` for
   small databases and compatibility
 - PostgreSQL provider through `pg_dump` and `pg_restore`, with Docker E2E
+- Redis RDB backup/restore through `redis-cli BGSAVE` or direct RDB copy
+- MongoDB archive backup/restore through `mongodump` and `mongorestore`
+- Elasticsearch snapshot orchestration
+- ClickHouse full/incremental backup orchestration through `clickhouse-client`
 - File backup/restore through platform-native archive tools
 - Local backup target first; S3/TOS/OSS provider remains in the library for
   later rollout
@@ -54,6 +58,9 @@ Install required database dump tools:
 dbbackup233 install mysqldump
 dbbackup233 install xtrabackup
 dbbackup233 install pg_dump
+dbbackup233 install redis-cli
+dbbackup233 install mongodump
+dbbackup233 install clickhouse-client
 ```
 
 ## Install dbbackup233
@@ -180,6 +187,37 @@ jobs:
   - name: "server-files"
     source: "server-files"
     targets: ["local"]
+```
+
+Additional source examples:
+
+```yaml
+sources:
+  - name: "redis-cache"
+    type: redis
+    redis:
+      host: "127.0.0.1"
+      port: 6379
+      mode: "bgsave"
+      rdb_path: "/var/lib/redis/dump.rdb"
+      restore_path: "./restore/redis/dump.rdb"
+
+  - name: "elasticsearch-logs"
+    type: elasticsearch
+    elasticsearch:
+      url: "http://127.0.0.1:9200"
+      repository: "game-backups"
+      snapshot: "dbbackup233-game-logs"
+      indices: ["game-*"]
+
+  - name: "clickhouse-events"
+    type: clickhouse
+    clickhouse:
+      host: "127.0.0.1"
+      database: "game_events"
+      mode: "incremental"
+      backup_destination: "Disk('backups', 'game-events-inc.zip')"
+      base_backup: "Disk('backups', 'game-events-full.zip')"
 ```
 
 ## History And Restore

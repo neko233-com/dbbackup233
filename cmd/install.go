@@ -22,7 +22,7 @@ func installCmd() *cobra.Command {
 	var force bool
 
 	c := &cobra.Command{
-		Use:   "install [mysqldump|xtrabackup|pg_dump|pg_basebackup|mongodump|redis-cli|all]",
+		Use:   "install [mysqldump|xtrabackup|pg_dump|pg_basebackup|mongodump|redis-cli|clickhouse-client|all]",
 		Short: "Install or verify official database dump tools",
 		Args:  cobra.ExactArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
@@ -57,8 +57,10 @@ func expandInstallTools(value string) ([]string, error) {
 		return []string{"mongodump"}, nil
 	case "redis", "redis-cli":
 		return []string{"redis-cli"}, nil
+	case "clickhouse", "clickhouse-client":
+		return []string{"clickhouse-client"}, nil
 	case "all":
-		return []string{"mysqldump", "xtrabackup", "pg_dump", "mongodump", "redis-cli"}, nil
+		return []string{"mysqldump", "xtrabackup", "pg_dump", "mongodump", "redis-cli", "clickhouse-client"}, nil
 	default:
 		return nil, fmt.Errorf("unsupported tool %q", value)
 	}
@@ -117,6 +119,8 @@ func detectWindowsPlan(tool string) (installPlan, error) {
 		pkg = "Redis.Redis"
 	} else if tool == "xtrabackup" {
 		pkg = "Percona.PerconaXtraBackup"
+	} else if tool == "clickhouse-client" {
+		pkg = "ClickHouse.ClickHouse"
 	}
 	if _, err := exec.LookPath("winget.exe"); err == nil {
 		return installPlan{Manager: "winget.exe", Args: []string{"install", "--id", pkg, "-e"}}, nil
@@ -131,6 +135,8 @@ func detectWindowsPlan(tool string) (installPlan, error) {
 			chocoPkg = "redis-64"
 		} else if tool == "xtrabackup" {
 			chocoPkg = "percona-xtrabackup"
+		} else if tool == "clickhouse-client" {
+			chocoPkg = "clickhouse"
 		}
 		return installPlan{Manager: "choco.exe", Args: []string{"install", chocoPkg, "-y"}}, nil
 	}
@@ -150,6 +156,8 @@ func detectDarwinPlan(tool string) (installPlan, error) {
 		pkg = "redis"
 	} else if tool == "xtrabackup" {
 		pkg = "percona-xtrabackup"
+	} else if tool == "clickhouse-client" {
+		pkg = "clickhouse"
 	}
 	return installPlan{Manager: "brew", Args: []string{"install", pkg}}, nil
 }
@@ -212,6 +220,14 @@ func linuxPackages(tool string) linuxPackageNames {
 			rpm:    []string{"percona-xtrabackup-80"},
 			apk:    []string{"percona-xtrabackup"},
 			pacman: []string{"percona-xtrabackup"},
+		}
+	}
+	if tool == "clickhouse-client" {
+		return linuxPackageNames{
+			apt:    []string{"clickhouse-client"},
+			rpm:    []string{"clickhouse-client"},
+			apk:    []string{"clickhouse-client"},
+			pacman: []string{"clickhouse-client"},
 		}
 	}
 	return linuxPackageNames{

@@ -80,6 +80,18 @@ Targets are output sinks:
 
 S3-compatible upload uses `github.com/minio/minio-go/v7`.
 
+## Provider Matrix
+
+| Source | Full Backup | Incremental / Native Delta | Restore |
+| --- | --- | --- | --- |
+| MySQL | XtraBackup full or mysqldump | XtraBackup incremental | prepare + optional copy-back, or mysql import |
+| PostgreSQL | `pg_dump` custom/plain | planned `pg_basebackup` incremental chain | `pg_restore` or `psql` |
+| Redis | RDB copy or `BGSAVE` then copy | Redis AOF/RDB policy external today | copy RDB to restore path |
+| MongoDB | `mongodump --archive --gzip` | oplog/PITR planned | `mongorestore --archive --gzip` |
+| Elasticsearch | snapshot API | snapshot repository is incremental internally | snapshot restore API |
+| ClickHouse | `BACKUP ... TO ...` | `BACKUP ... SETTINGS base_backup = ...` | `RESTORE ... FROM ...` |
+| Files | zip or tar.gz | planned changed-file index | archive extract |
+
 ## Manifest
 
 Manifest is JSON Lines. Each successful artifact records:

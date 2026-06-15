@@ -59,6 +59,8 @@ type SourceConfig struct {
 	Postgres   PostgresConfig   `yaml:"postgres"`
 	Mongo      MongoConfig      `yaml:"mongo"`
 	Redis      RedisConfig      `yaml:"redis"`
+	Elastic    ElasticConfig    `yaml:"elasticsearch"`
+	ClickHouse ClickHouseConfig `yaml:"clickhouse"`
 	File       FileConfig       `yaml:"file"`
 	ConfigRepo ConfigRepoConfig `yaml:"config"`
 }
@@ -133,6 +135,36 @@ type RedisConfig struct {
 	CLIPath     string `yaml:"cli_path"`
 	RDBPath     string `yaml:"rdb_path"`
 	RestorePath string `yaml:"restore_path"`
+}
+
+type ElasticConfig struct {
+	URL                string            `yaml:"url"`
+	Username           string            `yaml:"username"`
+	Password           string            `yaml:"password"`
+	Repository         string            `yaml:"repository"`
+	Snapshot           string            `yaml:"snapshot"`
+	Mode               string            `yaml:"mode"`
+	Indices            []string          `yaml:"indices"`
+	IncludeGlobalState bool              `yaml:"include_global_state"`
+	Headers            map[string]string `yaml:"headers"`
+	ExtraBody          map[string]any    `yaml:"extra_body"`
+	RestoreExtraBody   map[string]any    `yaml:"restore_extra_body"`
+}
+
+type ClickHouseConfig struct {
+	Host              string   `yaml:"host"`
+	Port              int      `yaml:"port"`
+	User              string   `yaml:"user"`
+	Password          string   `yaml:"password"`
+	Database          string   `yaml:"database"`
+	Table             string   `yaml:"table"`
+	Mode              string   `yaml:"mode"`
+	BackupName        string   `yaml:"backup_name"`
+	BackupDestination string   `yaml:"backup_destination"`
+	BaseBackup        string   `yaml:"base_backup"`
+	ClientTool        string   `yaml:"client_tool"`
+	ExtraArgs         []string `yaml:"extra_args"`
+	RestoreExtraArgs  []string `yaml:"restore_extra_args"`
 }
 
 type FileConfig struct {
@@ -298,6 +330,29 @@ func (c *Config) ApplyDefaults() {
 			if src.Redis.CLIPath == "" {
 				src.Redis.CLIPath = DefaultDumpToolName("redis-cli")
 			}
+		case "elasticsearch", "elastic":
+			src.Type = "elasticsearch"
+			if src.Elastic.Mode == "" {
+				src.Elastic.Mode = "snapshot"
+			}
+			src.Elastic.Mode = strings.ToLower(src.Elastic.Mode)
+			if src.Elastic.Snapshot == "" {
+				src.Elastic.Snapshot = "dbbackup233"
+			}
+		case "clickhouse":
+			if src.ClickHouse.Port == 0 {
+				src.ClickHouse.Port = 9000
+			}
+			if src.ClickHouse.Mode == "" {
+				src.ClickHouse.Mode = "full"
+			}
+			src.ClickHouse.Mode = strings.ToLower(src.ClickHouse.Mode)
+			if src.ClickHouse.ClientTool == "" {
+				src.ClickHouse.ClientTool = DefaultDumpToolName("clickhouse-client")
+			}
+			if src.ClickHouse.BackupName == "" {
+				src.ClickHouse.BackupName = "dbbackup233"
+			}
 		case "file":
 			if src.File.ArchiveTool == "" {
 				src.File.ArchiveTool = defaultArchiveTool()
@@ -418,6 +473,23 @@ func validateSource(src SourceConfig) error {
 	case "redis":
 		if src.Redis.Mode == "copy_rdb" && src.Redis.RDBPath == "" {
 			return fmt.Errorf("redis source %q copy_rdb mode requires rdb_path", src.Name)
+		}
+	case "elasticsearch":
+		if src.Elastic.URL == "" || src.Elastic.Repository == "" || src.Elastic.Snapshot == "" {
+			return fmt.Errorf("elasticsearch source %q requires url, repository, and snapshot", src.Name)
+		}
+		if src.Elastic.Mode != "snapshot" {
+			return fmt.Errorf("elasticsearch source %q mode must be snapshot", src.Name)
+		}
+	case "clickhouse":
+		if src.ClickHouse.Host == "" || src.ClickHouse.Database == "" || src.ClickHouse.BackupDestination == "" {
+			return fmt.Errorf("clickhouse source %q requires host, database, and backup_destination", src.Name)
+		}
+		if src.ClickHouse.Mode != "full" && src.ClickHouse.Mode != "incremental" {
+			return fmt.Errorf("clickhouse source %q mode must be full or incremental", src.Name)
+		}
+		if src.ClickHouse.Mode == "incremental" && src.ClickHouse.BaseBackup == "" {
+			return fmt.Errorf("clickhouse source %q incremental mode requires base_backup", src.Name)
 		}
 	case "file":
 		if len(src.File.Paths) == 0 {

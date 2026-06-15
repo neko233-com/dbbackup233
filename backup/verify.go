@@ -58,6 +58,8 @@ func VerifyConfig(cfg Config) VerifyResult {
 		case "postgres":
 			checkTool(&result, source.Name, source.Postgres.DumpTool)
 			checkTool(&result, source.Name, source.Postgres.RestoreTool)
+		case "clickhouse":
+			checkTool(&result, source.Name, source.ClickHouse.ClientTool)
 		case "file":
 			for _, path := range source.File.Paths {
 				if _, err := os.Stat(path); err != nil {

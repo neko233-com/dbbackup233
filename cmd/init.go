@@ -129,6 +129,31 @@ sources:
       rdb_path: "/var/lib/redis/dump.rdb"
       restore_path: "./restore/redis/dump.rdb"
 
+  - name: "elasticsearch-logs"
+    type: elasticsearch
+    elasticsearch:
+      url: "http://127.0.0.1:9200"
+      username: "${ES_USERNAME}"
+      password: "${ES_PASSWORD}"
+      repository: "game-backups"
+      snapshot: "dbbackup233-game-logs"
+      mode: "snapshot"
+      indices: ["game-*"]
+      include_global_state: false
+
+  - name: "clickhouse-events"
+    type: clickhouse
+    clickhouse:
+      host: "127.0.0.1"
+      port: 9000
+      user: "backup"
+      password: "${CLICKHOUSE_PASSWORD}"
+      database: "game_events"
+      mode: "full"
+      backup_name: "game-events-full"
+      backup_destination: "Disk('backups', 'game-events-full.zip')"
+      client_tool: "clickhouse-client"
+
   - name: "server-files"
     type: file
     file:
@@ -178,6 +203,12 @@ jobs:
     targets: ["local"]
   - name: "redis-cache"
     source: "redis-cache"
+    targets: ["local"]
+  - name: "elasticsearch-logs"
+    source: "elasticsearch-logs"
+    targets: ["local"]
+  - name: "clickhouse-events"
+    source: "clickhouse-events"
     targets: ["local"]
   - name: "server-files"
     source: "server-files"

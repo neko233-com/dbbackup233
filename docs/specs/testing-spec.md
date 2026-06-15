@@ -169,6 +169,15 @@ PostgreSQL Docker E2E must verify:
 - compare data
 - verify manifest
 
+### Additional Providers
+
+Must test:
+
+- Redis RDB copy command path
+- Elasticsearch snapshot request builder and receipt artifact
+- ClickHouse backup/restore query builders
+- provider config defaults and validation for Elasticsearch and ClickHouse
+
 ## Test Commands
 
 Fast tests:

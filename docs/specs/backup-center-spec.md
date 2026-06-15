@@ -30,6 +30,10 @@ Supported backup sources:
 - MySQL logical backup via official `mysqldump` and restore via official
   `mysql` for small databases and compatibility
 - PostgreSQL via official `pg_dump` and restore via official `pg_restore`
+- Redis via RDB copy or `redis-cli BGSAVE`
+- MongoDB via `mongodump`/`mongorestore`
+- Elasticsearch via snapshot API
+- ClickHouse via `BACKUP`/`RESTORE`
 - Files via platform archive tools
 
 Supported targets:
@@ -56,8 +60,9 @@ Supported operations:
 - MongoDB/Redis production support
 - Central Backup Center server implementation
 
-MongoDB, Redis, config repository backup, and `pg_basebackup` remain extension
-points, but they should not block the MySQL/files production path.
+Config repository backup, PostgreSQL physical incremental backup, and advanced
+PITR chains remain extension points, but they should not block the production
+agent path.
 
 ## Configuration Model
 

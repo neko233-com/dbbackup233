@@ -69,3 +69,11 @@ Current physical restore prepares the selected artifact. For a multi-step
 incremental chain, operators should restore from a prepared chain directory or
 use a full artifact. Chain application automation is planned as a next product
 step.
+
+## Other Providers
+
+- PostgreSQL restores through `pg_restore` or `psql`, depending on dump format.
+- Redis restores by copying the selected RDB artifact to `restore_path`.
+- MongoDB restores through `mongorestore --archive --gzip`.
+- Elasticsearch restores by calling `_snapshot/<repo>/<snapshot>/_restore`.
+- ClickHouse restores by running `RESTORE ... FROM <backup_destination>`.

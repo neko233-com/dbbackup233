@@ -41,6 +41,15 @@ path is built for that reality:
 `mysqldump` remains available for small or portable backup needs, but it is not
 the preferred path for huge production game data.
 
+The same agent model applies to supporting systems:
+
+- Redis for session/cache state snapshots
+- PostgreSQL for analytics or account data
+- Elasticsearch for logs/search indexes
+- ClickHouse for event pipelines
+- MongoDB for document stores
+- Files/config repositories for game service state
+
 ## Future Agent Features
 
 Planned directions:
