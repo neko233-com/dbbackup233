@@ -111,8 +111,36 @@ func restoreMySQLXtraBackup(ctx Context, cfg MySQLConfig, artifactPath string) e
 		return err
 	}
 	ctx.Logf("prepared xtrabackup restore dir: %s", restoreDir)
-	ctx.Logf("manual restore required: stop mysql, run xtrabackup --copy-back --target-dir=%s, then fix datadir ownership", restoreDir)
+	if cfg.RestoreDatadir == "" {
+		ctx.Logf("manual restore required: stop mysql, run xtrabackup --copy-back --target-dir=%s, then fix datadir ownership", restoreDir)
+		return nil
+	}
+	if err := runOptionalRestoreCommand(ctx, "stop mysql", cfg.RestoreStopCommand); err != nil {
+		return err
+	}
+	copyBack := BuildMySQLXtraCopyBackCommand(cfg, restoreDir)
+	ctx.Logf("run xtrabackup copy-back: %s %s", copyBack.Path, strings.Join(maskDumpArgs(copyBack.Args), " "))
+	if err := runCommand(context.Background(), copyBack, os.Stdout, os.Stderr, nil); err != nil {
+		return err
+	}
+	if err := runOptionalRestoreCommand(ctx, "fix datadir ownership", cfg.RestoreFixOwnershipCommand); err != nil {
+		return err
+	}
+	if err := runOptionalRestoreCommand(ctx, "start mysql", cfg.RestoreStartCommand); err != nil {
+		return err
+	}
+	ctx.Logf("mysql physical restore completed into datadir: %s", cfg.RestoreDatadir)
 	return nil
+}
+
+func runOptionalRestoreCommand(ctx Context, label string, command []string) error {
+	if len(command) == 0 {
+		ctx.Logf("skip %s: no command configured", label)
+		return nil
+	}
+	spec := CommandSpec{Path: command[0], Args: command[1:], Env: os.Environ()}
+	ctx.Logf("run %s: %s %s", label, spec.Path, strings.Join(maskDumpArgs(spec.Args), " "))
+	return runCommand(context.Background(), spec, os.Stdout, os.Stderr, nil)
 }
 
 func BuildMySQLDumpCommand(cfg MySQLConfig) CommandSpec {
@@ -193,6 +221,16 @@ func BuildMySQLXtraPrepareCommand(cfg MySQLConfig, targetDir string) CommandSpec
 		"--target-dir=" + targetDir,
 	}
 	args = append(cfg.PrepareExtraArgs, args...)
+	return CommandSpec{Path: cfg.XtraBackupTool, Args: args, Env: mysqlEnv(cfg)}
+}
+
+func BuildMySQLXtraCopyBackCommand(cfg MySQLConfig, targetDir string) CommandSpec {
+	args := []string{
+		"--copy-back",
+		"--target-dir=" + targetDir,
+		"--datadir=" + cfg.RestoreDatadir,
+	}
+	args = append(cfg.CopyBackExtraArgs, args...)
 	return CommandSpec{Path: cfg.XtraBackupTool, Args: args, Env: mysqlEnv(cfg)}
 }
 

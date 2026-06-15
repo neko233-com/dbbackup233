@@ -2,9 +2,9 @@
 
 Docs: https://neko233-com.github.io/dbbackup233/
 
-`dbbackup233` is the Backup Center CLI for game projects: one binary plus one
-YAML config gives any Windows/Linux/macOS machine a repeatable backup and
-restore workflow.
+`dbbackup233` is an agent-first Backup Center CLI for game projects: one binary
+plus one YAML config gives any Windows/Linux/macOS machine a repeatable backup,
+restore, verification, reporting, and scheduling workflow.
 
 Current MVP scope:
 
@@ -18,6 +18,7 @@ Current MVP scope:
   later rollout
 - Manifest-based backup history and versioned restore
 - Restore-time SHA-256 integrity verification before any write
+- One-key restore for logical dumps and opt-in one-key physical MySQL restore
 - Optional HTTP reporting for backup start/completion
 - Cross-platform install script, hot-update-next-run `dbbackup233 update`,
   `dbbackup233 cron`,
@@ -28,11 +29,14 @@ Current MVP scope:
 
 This project uses spec-driven development:
 
-- [Backup Center Spec](D:/Code/neko233-Projects/dbbackup233/docs/specs/backup-center-spec.md)
-- [Testing Spec](D:/Code/neko233-Projects/dbbackup233/docs/specs/testing-spec.md)
-- [Implementation Plan](D:/Code/neko233-Projects/dbbackup233/docs/specs/implementation-plan.md)
-- [Operator Runbook](D:/Code/neko233-Projects/dbbackup233/docs/operator-runbook.md)
-- [Benchmark Guide](D:/Code/neko233-Projects/dbbackup233/docs/benchmark.md)
+- [Backup Center Spec](docs/specs/backup-center-spec.md)
+- [Testing Spec](docs/specs/testing-spec.md)
+- [Implementation Plan](docs/specs/implementation-plan.md)
+- [Operator Runbook](docs/operator-runbook.md)
+- [Benchmark Guide](docs/benchmark.md)
+- [Technical Architecture](docs/technical-architecture.md)
+- [Agent-First Product](docs/agent-first.md)
+- [Restore Guide](docs/restore.md)
 
 ## Quick Start
 
@@ -103,7 +107,7 @@ dbbackup233 cron remove
 
 ## Config
 
-The committed [config.yaml](D:/Code/neko233-Projects/dbbackup233/config.yaml)
+The committed [config.yaml](config.yaml)
 is the shared spec template. Local secrets and ports should live in ignored
 `config.local.yaml`.
 
@@ -131,6 +135,10 @@ sources:
       xtrabackup_tool: "xtrabackup"
       xtrabackup_dir: "./backups/xtrabackup"
       xtrabackup_restore_dir: "./restore/mysql-xtrabackup"
+      restore_datadir: "" # set for opt-in one-key copy-back
+      restore_stop_command: []
+      restore_start_command: []
+      restore_fix_ownership_command: []
 
   - name: "mysql-game-incremental"
     type: mysql
@@ -147,6 +155,8 @@ sources:
       xtrabackup_tool: "xtrabackup"
       xtrabackup_dir: "./backups/xtrabackup"
       incremental_base_dir: "" # optional; empty uses xtrabackup_dir/latest-base.txt
+      xtrabackup_restore_dir: "./restore/mysql-xtrabackup"
+      restore_datadir: ""
 ```
 
 Physical MySQL artifacts use `.xb.zip` by default. Set
@@ -155,6 +165,10 @@ prepares the backup into `xtrabackup_restore_dir`; operator then stops MySQL and
 runs `xtrabackup --copy-back --target-dir=<restore-dir>` manually.
 Each successful XtraBackup updates `xtrabackup_dir/latest-base.txt`, so the next
 incremental job can chain from the newest local physical backup.
+
+Set `restore_datadir` plus stop/start/ownership commands for opt-in one-key
+physical restore. Without `restore_datadir`, restore prepares the backup only
+and never touches the live MySQL datadir.
 
 One config can submit many backup jobs in one command:
 
@@ -198,7 +212,7 @@ Your server only needs to implement:
 POST /api/backup/events
 ```
 
-See [docs/http-reporting.md](D:/Code/neko233-Projects/dbbackup233/docs/http-reporting.md)
+See [docs/http-reporting.md](docs/http-reporting.md)
 for payload examples.
 
 ## Upload Provider
@@ -208,7 +222,7 @@ v7.0.95`. `type: oss`, `type: tos`, and `type: s3` all route to that provider.
 The automated test uses a local S3-compatible mock server, verifies the upload
 interface is called, and checks the uploaded gzip dump content.
 
-See [docs/upload-provider.md](D:/Code/neko233-Projects/dbbackup233/docs/upload-provider.md).
+See [docs/upload-provider.md](docs/upload-provider.md).
 
 ## Automated Tests
 

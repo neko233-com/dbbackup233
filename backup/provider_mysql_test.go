@@ -38,6 +38,17 @@ func TestMySQLXtraBackupIncrementalCommand(t *testing.T) {
 	}
 }
 
+func TestMySQLXtraCopyBackCommand(t *testing.T) {
+	cfg := MySQLConfig{XtraBackupTool: "xtrabackup", RestoreDatadir: "/var/lib/mysql"}
+	spec := BuildMySQLXtraCopyBackCommand(cfg, "/restore/mysql")
+	got := strings.Join(spec.Args, " ")
+	for _, want := range []string{"--copy-back", "--target-dir=/restore/mysql", "--datadir=/var/lib/mysql"} {
+		if !strings.Contains(got, want) {
+			t.Fatalf("args %q missing %q", got, want)
+		}
+	}
+}
+
 func TestMySQLXtraBackupExtension(t *testing.T) {
 	source := SourceConfig{Type: "mysql", MySQL: MySQLConfig{Mode: "full"}}
 	if got := (MySQLBackupProvider{}).Extension(source, "gzip"); got != "xb.zip" {

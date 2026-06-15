@@ -133,7 +133,8 @@ Before writing data, restore verifies the artifact SHA-256 recorded in the
 manifest. If the local file changed or is incomplete, restore stops.
 
 For XtraBackup artifacts, restore extracts and runs `xtrabackup --prepare` into
-`xtrabackup_restore_dir`. Physical copy-back is manual by design:
+`xtrabackup_restore_dir`. If `restore_datadir` is empty, copy-back remains
+manual:
 
 ```bash
 systemctl stop mysql
@@ -141,6 +142,20 @@ xtrabackup --copy-back --target-dir=./restore/mysql-xtrabackup
 chown -R mysql:mysql /var/lib/mysql
 systemctl start mysql
 ```
+
+For one-key physical restore, configure:
+
+```yaml
+restore_datadir: "/var/lib/mysql"
+restore_stop_command: ["systemctl", "stop", "mysql"]
+restore_fix_ownership_command: ["chown", "-R", "mysql:mysql", "/var/lib/mysql"]
+restore_start_command: ["systemctl", "start", "mysql"]
+```
+
+Then `dbbackup233 restore ... --yes` runs stop, prepare, copy-back, ownership
+fix, and start in order. dbbackup233 does not delete the datadir; XtraBackup
+fails if the datadir is not ready, which prevents accidental destructive
+overwrite.
 
 ## 9. Schedule
 

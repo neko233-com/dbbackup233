@@ -62,6 +62,7 @@ Must test through Docker:
 - manifest records both full and incremental artifacts with SHA-256
 - concurrent writes continue during XtraBackup
 - Docker sidecar can run `percona/percona-xtrabackup:8.0`
+- copy-back command includes `--copy-back`, `--target-dir`, and `--datadir`
 
 MySQL fixture must include:
 

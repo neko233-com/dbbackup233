@@ -69,6 +69,10 @@ sources:
       xtrabackup_tool: "xtrabackup"
       xtrabackup_dir: "./backups/xtrabackup"
       xtrabackup_restore_dir: "./restore/mysql-xtrabackup"
+      restore_datadir: ""
+      restore_stop_command: []
+      restore_start_command: []
+      restore_fix_ownership_command: []
 
   - name: "mysql-game-incremental"
     type: mysql
@@ -87,6 +91,10 @@ sources:
       # Optional. If empty, dbbackup233 uses xtrabackup_dir/latest-base.txt.
       incremental_base_dir: ""
       xtrabackup_restore_dir: "./restore/mysql-xtrabackup"
+      restore_datadir: ""
+      restore_stop_command: []
+      restore_start_command: []
+      restore_fix_ownership_command: []
 
   - name: "postgres-analytics"
     type: postgres

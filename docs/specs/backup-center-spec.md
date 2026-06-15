@@ -140,6 +140,7 @@ The provider must support:
 - restore to the original database
 - restore to a different database with `restore_database`
 - `no_create_db` for cross-database restore validation
+- opt-in one-key physical restore with `restore_datadir`
 
 ### PostgreSQL
 
@@ -173,6 +174,8 @@ Rules:
   feature adds index rebuilding.
 - Restore must verify the artifact SHA-256 recorded in the manifest before any
   provider writes data.
+- Physical MySQL restore must prepare artifacts before copy-back.
+- Physical MySQL copy-back must require explicit `restore_datadir`.
 
 ## History Contract
 
