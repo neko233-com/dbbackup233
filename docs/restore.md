@@ -77,3 +77,6 @@ step.
 - MongoDB restores through `mongorestore --archive --gzip`.
 - Elasticsearch restores by calling `_snapshot/<repo>/<snapshot>/_restore`.
 - ClickHouse restores by running `RESTORE ... FROM <backup_destination>`.
+- Files/directories restore by extracting zip or tar.gz to `restore_dir`.
+- Custom command restores by running `command.restore_command` after checksum
+  verification, with `ARTIFACT_PATH` injected.

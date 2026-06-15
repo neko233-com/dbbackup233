@@ -17,7 +17,8 @@ Current MVP scope:
 - MongoDB archive backup/restore through `mongodump` and `mongorestore`
 - Elasticsearch snapshot orchestration
 - ClickHouse full/incremental backup orchestration through `clickhouse-client`
-- File backup/restore through platform-native archive tools
+- File/directory backup/restore through platform-native archive tools
+- Custom command provider for any backup tool that can read/write an artifact
 - Local backup target first; S3/TOS/OSS provider remains in the library for
   later rollout
 - Manifest-based backup history and versioned restore
@@ -218,7 +219,28 @@ sources:
       mode: "incremental"
       backup_destination: "Disk('backups', 'game-events-inc.zip')"
       base_backup: "Disk('backups', 'game-events-full.zip')"
+
+  - name: "server-files"
+    type: dir # aliases: file, dir, directory, path
+    file:
+      paths: ["./data", "./logs", "./game-shards"]
+      restore_dir: "./restore/files"
+
+  - name: "anything-with-cli"
+    type: command # aliases: command, exec, custom
+    command:
+      extension: "tar.gz"
+      backup_command: ["sh", "-lc", "my-backup-tool --out \"$ARTIFACT_PATH\""]
+      restore_command: ["sh", "-lc", "my-restore-tool --in \"$ARTIFACT_PATH\""]
+      capture_stdout: false
+      restore_stdin: false
 ```
+
+`command` provider is universal escape hatch. dbbackup233 injects
+`ARTIFACT_PATH`, records manifest/SHA-256/targets, and runs restore command
+after checksum verification. Use it for Cassandra, TiDB, Etcd, Consul,
+Milvus, OpenSearch, Neo4j, object-store metadata, proprietary game services,
+or any future engine before native provider exists.
 
 ## History And Restore
 

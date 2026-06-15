@@ -62,6 +62,7 @@ type SourceConfig struct {
 	Elastic    ElasticConfig    `yaml:"elasticsearch"`
 	ClickHouse ClickHouseConfig `yaml:"clickhouse"`
 	File       FileConfig       `yaml:"file"`
+	Command    CommandConfig    `yaml:"command"`
 	ConfigRepo ConfigRepoConfig `yaml:"config"`
 }
 
@@ -173,6 +174,15 @@ type FileConfig struct {
 	RestoreDir    string   `yaml:"restore_dir"`
 	Exclude       []string `yaml:"exclude"`
 	FollowSymlink bool     `yaml:"follow_symlink"`
+}
+
+type CommandConfig struct {
+	Extension      string            `yaml:"extension"`
+	BackupCommand  []string          `yaml:"backup_command"`
+	RestoreCommand []string          `yaml:"restore_command"`
+	Env            map[string]string `yaml:"env"`
+	CaptureStdout  bool              `yaml:"capture_stdout"`
+	RestoreStdin   bool              `yaml:"restore_stdin"`
 }
 
 type ConfigRepoConfig struct {
@@ -353,9 +363,15 @@ func (c *Config) ApplyDefaults() {
 			if src.ClickHouse.BackupName == "" {
 				src.ClickHouse.BackupName = "dbbackup233"
 			}
-		case "file":
+		case "file", "dir", "directory", "path":
+			src.Type = "file"
 			if src.File.ArchiveTool == "" {
 				src.File.ArchiveTool = defaultArchiveTool()
+			}
+		case "command", "exec", "custom":
+			src.Type = "command"
+			if src.Command.Extension == "" {
+				src.Command.Extension = "artifact"
 			}
 		case "config":
 			if src.ConfigRepo.Mode == "" {
@@ -494,6 +510,13 @@ func validateSource(src SourceConfig) error {
 	case "file":
 		if len(src.File.Paths) == 0 {
 			return fmt.Errorf("file source %q requires paths", src.Name)
+		}
+	case "command":
+		if len(src.Command.BackupCommand) == 0 {
+			return fmt.Errorf("command source %q requires command.backup_command", src.Name)
+		}
+		if src.Command.Extension == "" {
+			return fmt.Errorf("command source %q requires command.extension", src.Name)
 		}
 	case "config":
 		if src.ConfigRepo.Path == "" {

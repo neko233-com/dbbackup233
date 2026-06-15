@@ -110,11 +110,15 @@ func TestAdditionalProviderDefaults(t *testing.T) {
 		Sources: []SourceConfig{
 			{Name: "es", Type: "elastic", Elastic: ElasticConfig{URL: "http://127.0.0.1:9200", Repository: "repo"}},
 			{Name: "ch", Type: "clickhouse", ClickHouse: ClickHouseConfig{Host: "127.0.0.1", Database: "game", BackupDestination: "Disk('backups', 'game.zip')"}},
+			{Name: "dir", Type: "directory", File: FileConfig{Paths: []string{"./data"}}},
+			{Name: "cmd", Type: "exec", Command: CommandConfig{BackupCommand: []string{"tool", "backup"}}},
 		},
 		Targets: []TargetConfig{{Name: "local", Type: "local", Local: LocalTarget{Path: "./backups"}}},
 		Jobs: []JobConfig{
 			{Name: "es", Source: "es", Targets: []string{"local"}},
 			{Name: "ch", Source: "ch", Targets: []string{"local"}},
+			{Name: "dir", Source: "dir", Targets: []string{"local"}},
+			{Name: "cmd", Source: "cmd", Targets: []string{"local"}},
 		},
 	}
 	cfg.ApplyDefaults()
@@ -123,6 +127,12 @@ func TestAdditionalProviderDefaults(t *testing.T) {
 	}
 	if cfg.Sources[1].ClickHouse.Port != 9000 || cfg.Sources[1].ClickHouse.Mode != "full" {
 		t.Fatalf("bad clickhouse defaults: %+v", cfg.Sources[1])
+	}
+	if cfg.Sources[2].Type != "file" {
+		t.Fatalf("bad file alias: %+v", cfg.Sources[2])
+	}
+	if cfg.Sources[3].Type != "command" || cfg.Sources[3].Command.Extension != "artifact" {
+		t.Fatalf("bad command defaults: %+v", cfg.Sources[3])
 	}
 	if err := cfg.Validate(); err != nil {
 		t.Fatal(err)

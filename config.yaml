@@ -109,6 +109,16 @@ sources:
       paths: ["./data", "./logs"]
       restore_dir: "./restore/files"
 
+  - name: "any-custom-system"
+    type: command
+    command:
+      extension: "tar.gz"
+      # ARTIFACT_PATH is injected as env var and template value.
+      backup_command: ["sh", "-lc", "tar -czf \"$ARTIFACT_PATH\" ./anything"]
+      restore_command: ["sh", "-lc", "mkdir -p ./restore/anything && tar -xzf \"$ARTIFACT_PATH\" -C ./restore/anything"]
+      capture_stdout: false
+      restore_stdin: false
+
   - name: "redis-cache"
     type: redis
     redis:
@@ -170,6 +180,10 @@ jobs:
 
   - name: "server-files"
     source: "server-files"
+    targets: ["local"]
+
+  - name: "any-custom-system"
+    source: "any-custom-system"
     targets: ["local"]
 
   - name: "redis-cache"

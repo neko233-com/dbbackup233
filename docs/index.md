@@ -5,6 +5,7 @@
 Core docs:
 
 - [Technical Architecture](technical-architecture.md)
+- [Provider Matrix](provider-matrix.md)
 - [Restore Guide](restore.md)
 - [Agent-First Product](agent-first.md)
 - [Operator Runbook](operator-runbook.md)

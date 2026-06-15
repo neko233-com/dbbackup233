@@ -90,7 +90,13 @@ S3-compatible upload uses `github.com/minio/minio-go/v7`.
 | MongoDB | `mongodump --archive --gzip` | oplog/PITR planned | `mongorestore --archive --gzip` |
 | Elasticsearch | snapshot API | snapshot repository is incremental internally | snapshot restore API |
 | ClickHouse | `BACKUP ... TO ...` | `BACKUP ... SETTINGS base_backup = ...` | `RESTORE ... FROM ...` |
-| Files | zip or tar.gz | planned changed-file index | archive extract |
+| Files / directories | zip or tar.gz | planned changed-file index | archive extract |
+| Custom command | any command that creates `ARTIFACT_PATH` | delegated to command/tool | delegated to command/tool after checksum verify |
+
+`type: command` is the universal provider. It makes dbbackup233 support
+systems before native adapters exist: Cassandra, TiDB, Etcd, Consul, Milvus,
+OpenSearch, Neo4j, object-store metadata, proprietary game services, and any
+tool that can write one backup artifact.
 
 ## Manifest
 

@@ -18,6 +18,8 @@ func providerFor(sourceType string) (Provider, error) {
 		return ClickHouseBackupProvider{}, nil
 	case "file":
 		return FileBackupProvider{}, nil
+	case "command":
+		return CommandBackupProvider{}, nil
 	case "config":
 		return ConfigBackupProvider{}, nil
 	default:
