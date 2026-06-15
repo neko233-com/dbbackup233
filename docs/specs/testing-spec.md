@@ -56,7 +56,7 @@ Must test through Docker:
 Must test through Docker:
 
 - large synthetic InnoDB table loads successfully
-- XtraBackup full backup creates `.xb.tar.gz` artifact
+- XtraBackup full backup creates `.xb.zip` artifact by default
 - XtraBackup incremental backup uses prior local base
 - `xtrabackup_checkpoints` exists in latest base directory
 - manifest records both full and incremental artifacts with SHA-256

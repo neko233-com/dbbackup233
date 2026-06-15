@@ -43,7 +43,7 @@ func TestDockerMySQLXtraBackupFullIncrementalAndWrites(t *testing.T) {
 
 	root := t.TempDir()
 	xtraDir := filepath.Join(root, "xtrabackup")
-	cfg := xtraBackupDockerConfig(root, xtraDir, containerName, dataVolume, "xtrabackup-full", "")
+	cfg := xtraBackupDockerConfig(root, xtraDir, containerName, dataVolume, "full", "")
 	if err := NewBackupManager(cfg, RunnerOptions{Logf: t.Logf}).Backup(ctx); err != nil {
 		t.Fatal(err)
 	}
@@ -71,7 +71,7 @@ func TestDockerMySQLXtraBackupFullIncrementalAndWrites(t *testing.T) {
 		}
 	}()
 
-	incCfg := xtraBackupDockerConfig(root, xtraDir, containerName, dataVolume, "xtrabackup-incremental", "")
+	incCfg := xtraBackupDockerConfig(root, xtraDir, containerName, dataVolume, "incremental", "")
 	if err := NewBackupManager(incCfg, RunnerOptions{Logf: t.Logf}).Backup(ctx); err != nil {
 		close(stop)
 		<-done
@@ -95,7 +95,7 @@ func TestDockerMySQLXtraBackupFullIncrementalAndWrites(t *testing.T) {
 	}
 	var fullArt, incArt BackupArtifact
 	for _, art := range arts {
-		if !strings.HasSuffix(art.FilePath, ".xb.tar.gz") {
+		if !strings.HasSuffix(art.FilePath, ".xb.zip") {
 			t.Fatalf("expected xtrabackup artifact, got %s", art.FilePath)
 		}
 		if art.Size == 0 || art.SHA256 == "" {

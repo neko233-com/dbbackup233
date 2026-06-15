@@ -118,9 +118,13 @@ Unknown versions must fail validation.
 
 Recommended production mode:
 
-- `xtrabackup-full` for large production game databases
-- `xtrabackup-incremental` for chained incremental physical backups
+- `full` for large production game databases
+- `incremental` for chained incremental physical backups
 - `mysqldump` remains supported for small databases and portability
+
+Physical backup mode uses `physical_engine: xtrabackup`. The user-facing mode is
+dbbackup233 MySQL full/incremental; the engine remains explicit because hot
+physical backup correctness depends on MySQL/InnoDB internals.
 
 Logical dump mode uses:
 

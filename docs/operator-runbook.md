@@ -47,8 +47,9 @@ dbbackup233 install xtrabackup
 ```
 
 Use `mysqldump` only for small DBs or portability. For large game production
-DBs, use `mode: xtrabackup-full` plus `mode: xtrabackup-incremental`; this
-avoids full logical export every run and avoids table-level dump pressure.
+DBs, use `mode: full` plus `mode: incremental`; this avoids full logical export
+every run and avoids table-level dump pressure. The implementation uses
+`physical_engine: xtrabackup` by default.
 
 PostgreSQL:
 

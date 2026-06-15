@@ -53,7 +53,7 @@ XtraBackup validation:
 
 | Rows | Payload bytes | Concurrent writes during incremental | Result |
 | ---: | ---: | ---: | --- |
-| 100,000 | 512 | 916 | full + incremental passed |
+| 100,000 | 512 | 850 | full + incremental passed, default `.xb.zip` artifact |
 
 The low compressed artifact size is expected because the synthetic payload is
 highly compressible. For production-like estimates, run with a larger payload or

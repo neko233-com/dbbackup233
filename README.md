@@ -125,7 +125,9 @@ sources:
       password: "${MYSQL_BACKUP_PASSWORD}"
       database: "game"
       version: "mysql80"
-      mode: "xtrabackup-full"
+      mode: "full"
+      physical_engine: "xtrabackup"
+      physical_artifact_format: "zip" # zip or tar.gz
       xtrabackup_tool: "xtrabackup"
       xtrabackup_dir: "./backups/xtrabackup"
       xtrabackup_restore_dir: "./restore/mysql-xtrabackup"
@@ -139,15 +141,18 @@ sources:
       password: "${MYSQL_BACKUP_PASSWORD}"
       database: "game"
       version: "mysql80"
-      mode: "xtrabackup-incremental"
+      mode: "incremental"
+      physical_engine: "xtrabackup"
+      physical_artifact_format: "zip" # zip or tar.gz
       xtrabackup_tool: "xtrabackup"
       xtrabackup_dir: "./backups/xtrabackup"
       incremental_base_dir: "" # optional; empty uses xtrabackup_dir/latest-base.txt
 ```
 
-XtraBackup artifacts use `.xb.tar.gz`. Restore extracts and prepares the
-backup into `xtrabackup_restore_dir`; operator then stops MySQL and runs
-`xtrabackup --copy-back --target-dir=<restore-dir>` manually.
+Physical MySQL artifacts use `.xb.zip` by default. Set
+`physical_artifact_format: "tar.gz"` for `.xb.tar.gz`. Restore extracts and
+prepares the backup into `xtrabackup_restore_dir`; operator then stops MySQL and
+runs `xtrabackup --copy-back --target-dir=<restore-dir>` manually.
 Each successful XtraBackup updates `xtrabackup_dir/latest-base.txt`, so the next
 incremental job can chain from the newest local physical backup.
 

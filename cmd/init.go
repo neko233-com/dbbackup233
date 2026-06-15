@@ -63,7 +63,9 @@ sources:
       password: "${MYSQL_BACKUP_PASSWORD}"
       database: "game"
       version: "mysql80"
-      mode: "xtrabackup-full"
+      mode: "full"
+      physical_engine: "xtrabackup"
+      physical_artifact_format: "zip" # zip or tar.gz
       xtrabackup_tool: "xtrabackup"
       xtrabackup_dir: "./backups/xtrabackup"
       xtrabackup_restore_dir: "./restore/mysql-xtrabackup"
@@ -77,7 +79,9 @@ sources:
       password: "${MYSQL_BACKUP_PASSWORD}"
       database: "game"
       version: "mysql80"
-      mode: "xtrabackup-incremental"
+      mode: "incremental"
+      physical_engine: "xtrabackup"
+      physical_artifact_format: "zip" # zip or tar.gz
       xtrabackup_tool: "xtrabackup"
       xtrabackup_dir: "./backups/xtrabackup"
       # Optional. If empty, dbbackup233 uses xtrabackup_dir/latest-base.txt.

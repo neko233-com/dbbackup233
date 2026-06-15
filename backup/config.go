@@ -74,6 +74,8 @@ type MySQLConfig struct {
 	DumpTool           string   `yaml:"dump_tool"`
 	RestoreTool        string   `yaml:"restore_tool"`
 	Mode               string   `yaml:"mode"`
+	PhysicalEngine     string   `yaml:"physical_engine"`
+	PhysicalFormat     string   `yaml:"physical_artifact_format"`
 	XtraBackupTool     string   `yaml:"xtrabackup_tool"`
 	XtraBackupDir      string   `yaml:"xtrabackup_dir"`
 	XtraCommandDir     string   `yaml:"xtrabackup_command_dir"`
@@ -235,7 +237,15 @@ func (c *Config) ApplyDefaults() {
 			if src.MySQL.Mode == "" {
 				src.MySQL.Mode = "mysqldump"
 			}
-			src.MySQL.Mode = strings.ToLower(src.MySQL.Mode)
+			src.MySQL.Mode = normalizeMySQLMode(src.MySQL.Mode)
+			if src.MySQL.PhysicalEngine == "" {
+				src.MySQL.PhysicalEngine = "xtrabackup"
+			}
+			src.MySQL.PhysicalEngine = strings.ToLower(src.MySQL.PhysicalEngine)
+			if src.MySQL.PhysicalFormat == "" {
+				src.MySQL.PhysicalFormat = "zip"
+			}
+			src.MySQL.PhysicalFormat = strings.ToLower(src.MySQL.PhysicalFormat)
 			if src.MySQL.XtraBackupTool == "" {
 				src.MySQL.XtraBackupTool = DefaultDumpToolName("xtrabackup")
 			}
@@ -381,7 +391,13 @@ func validateSource(src SourceConfig) error {
 			return fmt.Errorf("mysql source %q version must be one of mysql57, mysql80", src.Name)
 		}
 		if !isValidMySQLMode(src.MySQL.Mode) {
-			return fmt.Errorf("mysql source %q mode must be one of mysqldump, xtrabackup-full, xtrabackup-incremental", src.Name)
+			return fmt.Errorf("mysql source %q mode must be one of mysqldump, full, incremental, xtrabackup-full, xtrabackup-incremental", src.Name)
+		}
+		if isXtraBackupMode(src.MySQL.Mode) && src.MySQL.PhysicalEngine != "xtrabackup" {
+			return fmt.Errorf("mysql source %q physical_engine must be xtrabackup", src.Name)
+		}
+		if isXtraBackupMode(src.MySQL.Mode) && !isValidPhysicalArtifactFormat(src.MySQL.PhysicalFormat) {
+			return fmt.Errorf("mysql source %q physical_artifact_format must be zip or tar.gz", src.Name)
 		}
 		if isXtraBackupMode(src.MySQL.Mode) && src.MySQL.XtraBackupDir == "" {
 			return fmt.Errorf("mysql source %q xtrabackup mode requires xtrabackup_dir", src.Name)
@@ -424,6 +440,26 @@ func isValidMySQLMode(mode string) bool {
 func isXtraBackupMode(mode string) bool {
 	switch strings.ToLower(mode) {
 	case "xtrabackup-full", "xtrabackup-incremental":
+		return true
+	default:
+		return false
+	}
+}
+
+func normalizeMySQLMode(mode string) string {
+	switch strings.ToLower(strings.TrimSpace(mode)) {
+	case "full", "mysql-full", "dbbackup233-full", "dbbackup233-mysql-full":
+		return "xtrabackup-full"
+	case "incremental", "mysql-incremental", "dbbackup233-incremental", "dbbackup233-mysql-incremental":
+		return "xtrabackup-incremental"
+	default:
+		return strings.ToLower(strings.TrimSpace(mode))
+	}
+}
+
+func isValidPhysicalArtifactFormat(format string) bool {
+	switch strings.ToLower(format) {
+	case "zip", "tar.gz":
 		return true
 	default:
 		return false

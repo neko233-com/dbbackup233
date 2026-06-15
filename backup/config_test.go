@@ -79,3 +79,27 @@ func TestMySQLXtraBackupModeValidation(t *testing.T) {
 		t.Fatal("expected missing xtrabackup_dir error")
 	}
 }
+
+func TestMySQLPhysicalModeDefaults(t *testing.T) {
+	cfg := Config{
+		Defaults: Defaults{Compress: "gzip", Concurrency: 1},
+		Sources: []SourceConfig{{
+			Name: "game", Type: "mysql", MySQL: MySQLConfig{Host: "127.0.0.1", User: "backup", Database: "game", Mode: "incremental", XtraBackupDir: "./xb"},
+		}},
+		Targets: []TargetConfig{{Name: "local", Type: "local", Local: LocalTarget{Path: "./backups"}}},
+		Jobs:    []JobConfig{{Name: "game", Source: "game", Targets: []string{"local"}}},
+	}
+	cfg.ApplyDefaults()
+	if got := cfg.Sources[0].MySQL.Mode; got != "xtrabackup-incremental" {
+		t.Fatalf("got mode %q", got)
+	}
+	if got := cfg.Sources[0].MySQL.PhysicalEngine; got != "xtrabackup" {
+		t.Fatalf("got engine %q", got)
+	}
+	if got := cfg.Sources[0].MySQL.PhysicalFormat; got != "zip" {
+		t.Fatalf("got format %q", got)
+	}
+	if err := cfg.Validate(); err != nil {
+		t.Fatal(err)
+	}
+}

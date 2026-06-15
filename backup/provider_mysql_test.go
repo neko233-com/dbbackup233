@@ -39,7 +39,11 @@ func TestMySQLXtraBackupIncrementalCommand(t *testing.T) {
 }
 
 func TestMySQLXtraBackupExtension(t *testing.T) {
-	source := SourceConfig{Type: "mysql", MySQL: MySQLConfig{Mode: "xtrabackup-full"}}
+	source := SourceConfig{Type: "mysql", MySQL: MySQLConfig{Mode: "full"}}
+	if got := (MySQLBackupProvider{}).Extension(source, "gzip"); got != "xb.zip" {
+		t.Fatalf("got %q", got)
+	}
+	source.MySQL.PhysicalFormat = "tar.gz"
 	if got := (MySQLBackupProvider{}).Extension(source, "gzip"); got != "xb.tar.gz" {
 		t.Fatalf("got %q", got)
 	}

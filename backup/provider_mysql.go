@@ -11,13 +11,18 @@ import (
 type MySQLBackupProvider struct{}
 
 func (MySQLBackupProvider) Extension(source SourceConfig, _ string) string {
-	if isXtraBackupMode(source.MySQL.Mode) {
-		return "xb.tar.gz"
+	mode := normalizeMySQLMode(source.MySQL.Mode)
+	if isXtraBackupMode(mode) {
+		if source.MySQL.PhysicalFormat == "tar.gz" {
+			return "xb.tar.gz"
+		}
+		return "xb.zip"
 	}
 	return "sql.gz"
 }
 
 func (MySQLBackupProvider) Backup(ctx Context, source SourceConfig, artifactPath string) error {
+	source.MySQL.Mode = normalizeMySQLMode(source.MySQL.Mode)
 	if isXtraBackupMode(source.MySQL.Mode) {
 		return backupMySQLXtraBackup(ctx, source.MySQL, artifactPath)
 	}
@@ -26,6 +31,7 @@ func (MySQLBackupProvider) Backup(ctx Context, source SourceConfig, artifactPath
 }
 
 func (MySQLBackupProvider) Restore(ctx Context, source SourceConfig, artifactPath string) error {
+	source.MySQL.Mode = normalizeMySQLMode(source.MySQL.Mode)
 	if isXtraBackupMode(source.MySQL.Mode) {
 		return restoreMySQLXtraBackup(ctx, source.MySQL, artifactPath)
 	}
@@ -51,6 +57,7 @@ func backupMySQLXtraBackup(ctx Context, cfg MySQLConfig, artifactPath string) er
 		cfg.IncrementalBaseDir = baseDir
 	}
 	name := filepath.Base(strings.TrimSuffix(strings.TrimSuffix(artifactPath, ".tar.gz"), ".xb"))
+	name = strings.TrimSuffix(name, ".zip")
 	targetDir := filepath.Join(cfg.XtraBackupDir, name)
 	commandTargetDir := targetDir
 	if cfg.XtraCommandDir != "" {
@@ -86,6 +93,7 @@ func restoreMySQLXtraBackup(ctx Context, cfg MySQLConfig, artifactPath string) e
 	restoreDir := cfg.XtraRestoreDir
 	if restoreDir == "" {
 		restoreDir = strings.TrimSuffix(artifactPath, ".tar.gz")
+		restoreDir = strings.TrimSuffix(restoreDir, ".zip")
 		restoreDir = restoreDir + "-restore"
 	}
 	if err := os.RemoveAll(restoreDir); err != nil {
@@ -94,7 +102,7 @@ func restoreMySQLXtraBackup(ctx Context, cfg MySQLConfig, artifactPath string) e
 	if err := os.MkdirAll(restoreDir, 0o755); err != nil {
 		return err
 	}
-	if err := extractTarGzip(artifactPath, restoreDir); err != nil {
+	if err := extractArchive(artifactPath, restoreDir); err != nil {
 		return err
 	}
 	spec := BuildMySQLXtraPrepareCommand(cfg, restoreDir)
@@ -158,6 +166,7 @@ func BuildMySQLRestoreCommand(cfg MySQLConfig) CommandSpec {
 }
 
 func BuildMySQLXtraBackupCommand(cfg MySQLConfig, targetDir string) CommandSpec {
+	cfg.Mode = normalizeMySQLMode(cfg.Mode)
 	args := []string{
 		"--backup",
 		"--host=" + cfg.Host,
@@ -196,6 +205,7 @@ func mysqlEnv(cfg MySQLConfig) []string {
 }
 
 func ValidateXtraBackupChain(cfg MySQLConfig) error {
+	cfg.Mode = normalizeMySQLMode(cfg.Mode)
 	if cfg.Mode != "xtrabackup-incremental" {
 		return nil
 	}
